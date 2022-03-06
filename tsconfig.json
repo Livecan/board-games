@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "sourceMap": true,
+    "target": "es5",
+    "jsx": "react",
+    "allowJs": true,
+    "esModuleInterop": true,
+    "composite": true,
+    "rootDirs": [
+      "client/src",
+      "server/src"
+    ]
+  },
+}
