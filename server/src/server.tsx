@@ -1,11 +1,15 @@
 import express from "express";
 import cors from "cors";
+import * as ReactDOMServer from "react-dom/server";
+import React from "react";
+import App from "../../client/src/App";
 
 const app = express();
 
 app.use(cors());
 
 app.get('/', (req, res) => {
+  const app = ReactDOMServer.renderToString(<App />);
 
   const html = `
     <html lang="en">
@@ -13,7 +17,7 @@ app.get('/', (req, res) => {
       <script src="bundle.min.js" async defer></script>
     </head>
     <body>
-      <div id="app"></div>
+      <div id="app">${app}</div>
     </body>
     </html>
   `;
