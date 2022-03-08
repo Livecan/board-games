@@ -33,7 +33,10 @@ app.get('/', (req, res) => {
 app.post('/login', (req, res) => {
   console.log(req.body.username);
   const token = jwt.sign({ username: req.body.username }, secret, { algorithm: "HS256", expiresIn: "14 days" });
-  res.send({jwt: token});
+  res.send({
+    jwt: token,
+    user: req.body.username
+  });
 });
 
 app.use(express.static("./client-build"));
