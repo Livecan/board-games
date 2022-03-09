@@ -3,6 +3,7 @@ import cors from "cors";
 import * as ReactDOMServer from "react-dom/server";
 import React from "react";
 import { authenticate, verifyToken } from "./service/authentication.service";
+import formulaRouter from "./route/FormulaGameRoutes";
 import App from "../../client/src/App";
 
 const app = express();
@@ -44,6 +45,8 @@ app.post('/login', (req, res) => {
     .then(token => res.send({jwt: token, user: req.body.username}))
     .catch(error => res.sendStatus(401).send("Authentication failed"));
 });
+
+app.use('/formula', formulaRouter);
 
 app.use(express.static("./client-build"));
 
