@@ -2,12 +2,8 @@ import express from "express";
 import cors from "cors";
 import * as ReactDOMServer from "react-dom/server";
 import React from "react";
-import jwt from "jsonwebtoken";
-import crypto from "crypto";
+import { authenticate, verifyToken } from "./service/authentication.service";
 import App from "../../client/src/App";
-
-let secret = crypto.randomBytes(32).toString('hex');
-console.log(`Using secret: ${secret}`);
 
 const app = express();
 
@@ -16,7 +12,6 @@ app.use(express.json());
 
 app.get('/', (req, res) => {
   const app = ReactDOMServer.renderToString(<App />);
-
   const html = `
     <html lang="en">
     <head>
@@ -30,13 +25,24 @@ app.get('/', (req, res) => {
   res.send(html);
 });
 
+app.all('*', (req, res, next) => {
+  try {
+    const jwt = req.headers?.authorization;
+    if (jwt != null) {
+      req.user = verifyToken(req.headers?.authorization);
+    }
+    next();
+  }
+  catch (e) {
+    console.error(e);
+    res.sendStatus(401).send("Authentication failed")
+  }
+});
+
 app.post('/login', (req, res) => {
-  console.log(req.body.username);
-  const token = jwt.sign({ username: req.body.username }, secret, { algorithm: "HS256", expiresIn: "14 days" });
-  res.send({
-    jwt: token,
-    user: req.body.username
-  });
+  authenticate(req.body.username, req.body.password)
+    .then(token => res.send({jwt: token, user: req.body.username}))
+    .catch(error => res.sendStatus(401).send("Authentication failed"));
 });
 
 app.use(express.static("./client-build"));
