@@ -1,11 +1,8 @@
 import md5 from "md5";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import sqlConnection from "./db.service";
-import { initModels, users, usersAttributes } from "../models/init-models";
+import { users, usersAttributes } from "../models/init-models";
 import { AuthenticationFailedError } from "../utils/errors";
-
-initModels(sqlConnection);
 
 interface UserToken {
   id: number,

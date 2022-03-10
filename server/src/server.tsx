@@ -2,16 +2,20 @@ import express from "express";
 import cors from "cors";
 import * as ReactDOMServer from "react-dom/server";
 import React from "react";
+import sqlConnection from "./service/db.service";
 import { login } from "./service/authentication.service";
 import gameRoutes from "./route/GameRoutes";
 import formulaRoutes from "./route/FormulaGameRoutes";
 import App from "../../client/src/App";
 import { AuthenticationFailedError } from "./utils/errors";
+import { initModels } from "./models/init-models";
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+initModels(sqlConnection);
 
 app.get('/', (req, res) => {
   const app = ReactDOMServer.renderToString(<App />);
