@@ -110,6 +110,15 @@ export class gamesUsers extends Model<gamesUsersAttributes, gamesUsersCreationAt
         ]
       },
       {
+        name: "game_id_2",
+        unique: true,
+        using: "BTREE",
+        fields: [
+          { name: "game_id" },
+          { name: "user_id" },
+        ]
+      },
+      {
         name: "Game_ID",
         using: "BTREE",
         fields: [
