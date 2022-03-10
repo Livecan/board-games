@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import * as ReactDOMServer from "react-dom/server";
 import React from "react";
-import { authenticate, verifyToken } from "./service/authentication.service";
+import { login } from "./service/authentication.service";
 import gameRoutes from "./route/GameRoutes";
 import formulaRoutes from "./route/FormulaGameRoutes";
 import App from "../../client/src/App";
@@ -28,22 +28,8 @@ app.get('/', (req, res) => {
   res.send(html);
 });
 
-app.all('*', (req, res, next) => {
-  try {
-    const jwt = req.headers?.authorization;
-    if (jwt != null) {
-      req.user = verifyToken(req.headers?.authorization);
-    }
-    next();
-  }
-  catch (e) {
-    console.error(e);
-    res.sendStatus(401).send("Authentication failed")
-  }
-});
-
 app.post('/login', (req, res) => {
-  authenticate(req.body.username, req.body.password)
+  login(req.body.username, req.body.password)
     .then(token => res.send({jwt: token, user: req.body.username}))
     .catch(e => {
       if (e instanceof AuthenticationFailedError) {
