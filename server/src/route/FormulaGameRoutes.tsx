@@ -2,9 +2,8 @@ import express from "express";
 
 const router = express.Router();
 
-router.route('/')
-  .get((req, res) => {
-    res.send({message: 'Formula Route!'});
-  });
+router.route("/").get((req, res) => {
+  res.send({ message: "Formula Route!" });
+});
 
 export default router;

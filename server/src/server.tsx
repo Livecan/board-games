@@ -17,7 +17,7 @@ app.use(express.json());
 
 initModels(sqlConnection);
 
-app.get('/', (req, res) => {
+app.get("/", (req, res) => {
   const app = ReactDOMServer.renderToString(<App />);
   const html = `
     <html lang="en">
@@ -32,22 +32,21 @@ app.get('/', (req, res) => {
   res.send(html);
 });
 
-app.post('/login', (req, res) => {
+app.post("/login", (req, res) => {
   login(req.body.username, req.body.password)
-    .then(token => res.send({jwt: token, user: req.body.username}))
-    .catch(e => {
+    .then((token) => res.send({ jwt: token, user: req.body.username }))
+    .catch((e) => {
       if (e instanceof AuthenticationFailedError) {
         res.sendStatus(401).send("Authentication failed");
-      }
-      else {
+      } else {
         res.sendStatus(500).send();
         throw e;
       }
     });
 });
 
-app.use('/game', gameRoutes);
-app.use('/formula', formulaRoutes);
+app.use("/game", gameRoutes);
+app.use("/formula", formulaRoutes);
 
 app.use(express.static("./client-build"));
 

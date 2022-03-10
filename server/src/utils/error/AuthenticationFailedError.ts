@@ -1,5 +1,3 @@
-class AuthenticationFailedError extends Error {
-
-}
+class AuthenticationFailedError extends Error {}
 
 export default AuthenticationFailedError;
