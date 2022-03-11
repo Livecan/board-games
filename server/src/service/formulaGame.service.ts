@@ -1,19 +1,26 @@
 import { foGames } from "../models/foGames";
+import { foTracks } from "../models/foTracks";
 import { games } from "../models/games";
 import { gamesUsers } from "../models/gamesUsers";
+import { users } from "../models/users";
+import { NotFoundError } from "../utils/errors";
 
-const add = async (userId: number): Promise<games> => {
+const add = async (user: users, name: string | null): Promise<games> => {
+  const foTrackId = 1;
+  const foTrack = await foTracks.findByPk(foTrackId);
   const game = games.build({
-    name: `userId`,
+    name: name ?? `${user.name}'s ${foTrack.name}`,
     maxPlayers: 8,
-    creatorId: userId,
+    creatorId: user.id,
     gameTypeId: 2,
   });
   await game.save();
-  await gamesUsers.build({ userId: userId, gameId: game.id }).save();
-  await foGames
-    .build({ gameId: game.id, foTrackId: 1, carsPerPlayer: 2 })
-    .save();
+  await Promise.all([
+    gamesUsers.build({ userId: user.id, gameId: game.id }).save(),
+    foGames
+      .build({ gameId: game.id, foTrackId: foTrackId, carsPerPlayer: 2 })
+      .save(),
+  ]);
   try {
     return await games.findByPk(game.id, {
       include: [
@@ -26,4 +33,18 @@ const add = async (userId: number): Promise<games> => {
   }
 };
 
-export { add };
+const view = async (gameId: number): Promise<Object> => {
+  // @todo Consider promise rejection problems here
+  const game = await games.findByPk(gameId, {
+    include: [
+      { model: gamesUsers, as: "gamesUsers" },
+      { model: foGames, as: "foGame" },
+    ],
+  });
+  if (game === null) {
+    throw new NotFoundError();
+  }
+  return game;
+};
+
+export { add, view };
