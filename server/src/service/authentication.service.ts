@@ -1,8 +1,9 @@
 import md5 from "md5";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { users, usersAttributes } from "../models/init-models";
+import { users } from "../models/init-models";
 import { AuthenticationFailedError } from "../utils/errors";
+import { NextFunction } from "express";
 
 interface UserToken {
   id: number;
@@ -31,18 +32,28 @@ const login = async (username: string, password: string) => {
   }
 };
 
-const authenticate = async (req: Request): Promise<usersAttributes> => {
+const authenticate = async (
+  req,
+  res,
+  next: NextFunction,
+  throwsErrorOnAuthenticationFailed: Boolean = true
+): Promise<void> => {
   try {
-    const jwtToken = req.headers["authorization"];
+    const jwtToken = req.headers?.authorization;
     const userId = jwt.verify(jwtToken, secret)["id"];
-    console.log(userId);
-    req["user"] = await users.findByPk(userId, {
+    console.log(`User ID: ${userId}`);
+    req.user = await users.findByPk(userId, {
       attributes: { exclude: ["password"] },
     });
-    return req["user"];
+    next();
   } catch (e) {
     // @todo Is this always correct?
-    throw new AuthenticationFailedError();
+    if (throwsErrorOnAuthenticationFailed) {
+      res.sendStatus(401).send("Authentication failed");
+      throw new AuthenticationFailedError();
+    } else {
+      next();
+    }
   }
 };
 

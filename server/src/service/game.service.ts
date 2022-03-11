@@ -10,10 +10,16 @@ const view = async (gameId: number): Promise<Object> => {
   return game;
 };
 
-const join = async (gameId: number, userId: number): Promise<void> => {
+const join = async (gameId: number, userId: number): Promise<games> => {
   const game = await games.findByPk(gameId);
-  const gameUser = gamesUsers.build({ gameId: gameId, userId: userId });
-  await gameUser.save();
+  try {
+    const gameUser = await gamesUsers.findOrCreate({
+      where: { gameId: gameId, userId: userId },
+    });
+    return game;
+  } catch (e) {
+    throw e;
+  }
 };
 
 export { view, join };

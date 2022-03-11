@@ -18,24 +18,15 @@ router.route("/:gameId").get((req, res) => {
     });
 });
 
-router.route("/:gameId/join").post((req, res) => {
-  authenticate(req)
-    .then((user) => {
-      join(req.params.gameId, user.id)
-        .then(() => res.send("Joined the game!"))
-        // @todo Figure out if want to do anything about duplicate entries
-        // here, currently does not respond here
-        .catch((e) => {
-          throw e;
-        });
-    })
-    .catch((e) => {
-      if (e instanceof AuthenticationFailedError) {
-        res.sendStatus(401).send("Authentication failed");
-      } else {
+router.route("/:gameId/join").post([
+  (req, res, next) => authenticate(req, res, next),
+  (req, res) => {
+    join(req.params.gameId, req.user.id)
+      .then((game) => res.send(game))
+      .catch((e) => {
         throw e;
-      }
-    });
-});
+      });
+  },
+]);
 
 export default router;
