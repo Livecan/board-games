@@ -32,29 +32,39 @@ const login = async (username: string, password: string) => {
   }
 };
 
+const authenticateToken = async (jwtToken: string, req: any = null) => {
+  try {
+    const userId = jwt.verify(jwtToken, secret)["id"];
+    console.log(`User ID: ${userId}`);
+    const user = await users.findByPk(userId, {
+      attributes: { exclude: ["password"] },
+    });
+    if (req != null) {
+      req.user = user;
+    }
+    return user;
+  } catch (e) {
+    throw new AuthenticationFailedError();
+  }
+};
+
 const authenticate = async (
   req,
   res,
   next: NextFunction,
-  throwsErrorOnAuthenticationFailed: Boolean = true
+  onAuthenticationFailed = true
 ): Promise<void> => {
   try {
     const jwtToken = req.headers?.authorization;
-    const userId = jwt.verify(jwtToken, secret)["id"];
-    console.log(`User ID: ${userId}`);
-    req.user = await users.findByPk(userId, {
-      attributes: { exclude: ["password"] },
-    });
+    await authenticateToken(jwtToken, req);
     next();
   } catch (e) {
     // @todo Is this always correct?
-    if (throwsErrorOnAuthenticationFailed) {
+    if (onAuthenticationFailed === true) {
       res.sendStatus(401).send("Authentication failed");
-      throw new AuthenticationFailedError();
-    } else {
-      next();
     }
+    throw e;
   }
 };
 
-export { login, authenticate };
+export { login, authenticate, authenticateToken };

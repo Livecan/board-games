@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import * as ReactDOMServer from "react-dom/server";
 import React from "react";
+import expressWebSocket from "express-ws";
+import PubSub from "pubsub-js";
 import sqlConnection from "./service/db.service";
 import { login } from "./service/authentication.service";
 import gameRoutes from "./route/GameRoutes";
@@ -9,12 +11,22 @@ import formulaRoutes from "./route/FormulaGameRoutes";
 import App from "../../client/src/App";
 import { AuthenticationFailedError } from "./utils/errors";
 import { initModels } from "./models/init-models";
+import expressWs from "express-ws";
 
 const app = express();
 
 app.use(cors());
+
+// Transforms request body to JSON
 app.use(express.json());
 
+// Puts Publisher-Subscriber in global app, so that requests in imported routes can share messages
+// @ts-ignore
+app.pubSub = PubSub;
+
+expressWebSocket(app);
+
+// Initializes DB connection making it available when using models in services
 initModels(sqlConnection);
 
 app.get("/", (req, res) => {
