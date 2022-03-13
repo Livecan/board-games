@@ -37,13 +37,22 @@ const view = async (gameId: number): Promise<Object> => {
   // @todo Consider promise rejection problems here
   const game = await games.findByPk(gameId, {
     include: [
-      { model: gamesUsers, as: "gamesUsers" },
+      {
+        model: gamesUsers,
+        as: "gamesUsers",
+        include: {
+          model: users,
+          as: "user",
+          attributes: { exclude: ["password"] },
+        },
+      },
       { model: foGames, as: "foGame" },
     ],
   });
   if (game === null) {
     throw new NotFoundError();
   }
+  game.gamesUsers.forEach((gameUser) => delete gameUser.user.password);
   return game;
 };
 
