@@ -12,60 +12,61 @@ interface PublishMethod {
  * {msg: "authorized"}. At this point the client is subscribed to updates and
  * the server listens to following messages.
  *
- * @param onMessage
+ * @param onIncoming
  *   Handles client's messages.
- * @param onPublish
+ * @param onOutcoming
  *   Handles updating this client. The parameter is received from currently
  *   updating client onMessage handler.
- * @param configuration
+ * @param config
  */
 const establishWebSocketConnection = (
-  onMessage: (req: any, data: any, publish: PublishMethod) => void,
-  onPublish: PublishMethod = () => null,
-  configuration: {
+  onIncoming: (req: any, data: any, outData: PublishMethod) => void,
+  onOutcoming: PublishMethod = () => null,
+  config: {
     ws: WebSocket;
     req: Request | (Request & { user: any });
     publisherSubscriber: PubSubJS.Base;
+    skipAuthentication: Boolean;
   }
 ) => {
-  const topic = configuration.req.url;
-  configuration.ws.on("message", async (msg: string) => {
+  const topic = config.req.url;
+  config.ws.on("message", async (msg: string) => {
     const data = JSON.parse(msg);
     // If user info not present in req object, need to authenticate
-    if (configuration.req?.user?.subscriptionToken == null) {
+    if (!config.skipAuthentication && config.req?.user?.subscriptionToken == null) {
       try {
         // @todo Decide if somehow move the authentication out of here or maybe
         // have a parameter of an authentication method
-        await authenticateToken(data.token, configuration.req);
+        await authenticateToken(data.token, config.req);
         // after successful authentication subscribe to this channel
-        const subscriptionToken = configuration.publisherSubscriber.subscribe(
-          configuration.req.url,
+        const subscriptionToken = config.publisherSubscriber.subscribe(
+          config.req.url,
           // A subscriber received the data process by onPublish.
           // WebSocket does not accept JSON objects.
           (topic, data) =>
-            configuration.ws.send(JSON.stringify(onPublish(data)))
+            config.ws.send(JSON.stringify(onOutcoming(data)))
         );
-        configuration.req.user.subscriptionToken = subscriptionToken;
-        configuration.ws.send(JSON.stringify({ msg: "authorized" }));
+        config.req.user.subscriptionToken = subscriptionToken;
+        config.ws.send(JSON.stringify({ msg: "authorized" }));
       } catch (e) {
-        configuration.ws.close(4000, "Authentication Failed");
+        config.ws.close(4000, "Authentication Failed");
       }
     }
     // If user is authenticated, then message is processed by onMessage.
     // OnMessage can call the given publisher function to notify all subscribers.
     else {
-      onMessage(req, data, (data) => {
+      onIncoming(config.req, data, (data) => {
         console.log(data);
-        configuration.publisherSubscriber.publish(topic, data);
+        config.publisherSubscriber.publish(topic, data);
       });
     }
 
     // When this websocket is closed, needs to unsubscribe from updates.
-    configuration.ws.on("close", () => {
-      configuration.publisherSubscriber.unsubscribe(
-        configuration.req.user?.subscriptionToken
+    config.ws.on("close", () => {
+      config.publisherSubscriber.unsubscribe(
+        config.req.user?.subscriptionToken
       );
-      console.log(`Unsubscribe: ${configuration.req.user?.subscriptionToken}`);
+      console.log(`Unsubscribe: ${config.req.user?.subscriptionToken}`);
     });
   });
 };
