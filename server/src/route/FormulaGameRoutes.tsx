@@ -1,15 +1,19 @@
 import express, { NextFunction, Request, Response } from "express";
 import expressWebSocket from "express-ws";
 import { users } from "../models/users";
-import { authenticate } from "../service/authentication.service";
+import {
+  authenticate,
+  authenticateToken,
+} from "../service/authentication.service";
 import { add, view } from "../service/formulaGame.service";
 import { NotFoundError } from "../utils/errors";
-import { establishWebSocketConnection } from "../utils/webSocketUtils";
 
 const router = express.Router();
 
 // @ts-ignore
 expressWebSocket(router);
+
+const setupSubscription = "formula/setup/";
 
 router.route("/add").post([
   (req, res, next) => authenticate(req, res, next),
@@ -36,16 +40,35 @@ router.route("/:gameId").get((req, res) => {
 });
 
 // @ts-ignore
-router.ws("/:gameId/setup", (ws, req) => {
-  establishWebSocketConnection(
-    (req, data, publish) => publish(data),
-    (data) => data,
-    {
-      ws: ws,
-      req: req,
-      publisherSubscriber: req.app.pubSub,
-    }
-  );
-});
+router.ws(
+  "/:gameId/setup",
+  (ws, req: Request & { app: { pubSub: PubSubJS.Base } }) => {
+    ws.on("message", async (msg: string) => {
+      const data = JSON.parse(msg);
+      try {
+        await authenticateToken(data.token, req);
+        const subscriptionToken = req.app.pubSub.subscribe(
+          setupSubscription + req.params.gameId,
+          (topic, data) => ws.send(JSON.stringify(data))
+        );
+        ws.on("close", () => req.app.pubSub.unsubscribe(subscriptionToken));
+      } catch (e) {
+        ws.close(4000, "Authentication Failed");
+        throw e;
+      }
+    });
+  }
+);
+
+router.post("/:gameId/setup", [
+  (req, res, next) => authenticate(req, res, next),
+  (req: Request & { app: { pubSub: PubSubJS.Base } }, res) => {
+    // @todo Add the setup adit functionality first
+    req.app.pubSub.publish(setupSubscription + req.params.gameId, {
+      data: "data",
+    });
+    res.send(null);
+  },
+]);
 
 export default router;
