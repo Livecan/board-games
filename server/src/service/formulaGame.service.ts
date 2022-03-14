@@ -40,11 +40,7 @@ const view = async (gameId: number): Promise<Object> => {
       {
         model: gamesUsers,
         as: "gamesUsers",
-        include: {
-          model: users,
-          as: "user",
-          attributes: { exclude: ["password"] },
-        },
+        include: { model: users, as: "user", attributes: ["id", "name"] },
       },
       { model: foGames, as: "foGame" },
     ],
@@ -52,7 +48,6 @@ const view = async (gameId: number): Promise<Object> => {
   if (game === null) {
     throw new NotFoundError();
   }
-  game.gamesUsers.forEach((gameUser) => delete gameUser.user.password);
   return game;
 };
 
