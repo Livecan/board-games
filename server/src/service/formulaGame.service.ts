@@ -1,6 +1,7 @@
-import { foGames } from "../models/foGames";
+import { foCarsAttributes } from "../models/foCars";
+import { foGames, foGamesAttributes } from "../models/foGames";
 import { foTracks } from "../models/foTracks";
-import { games } from "../models/games";
+import { games, gamesAttributes } from "../models/games";
 import { gamesUsers } from "../models/gamesUsers";
 import { users } from "../models/users";
 import { NotFoundError } from "../utils/errors";
@@ -51,4 +52,38 @@ const view = async (gameId: number): Promise<Object> => {
   return game;
 };
 
-export { add, view };
+interface editCarSetup {
+  // @todo Move this hard-coded value in a const
+  type: "edit-car";
+  foCar: foCarsAttributes;
+}
+
+type gameSetup = foGamesAttributes & gamesAttributes;
+
+interface editGameSetup {
+  // @todo Move this hard-coded value in a const
+  type: "edit-setup";
+  gameSetup: gameSetup;
+}
+
+const getGameSetup = async (gameId: number): Promise<gameSetup> => {
+  const game = await games.findByPk(gameId, {
+    include: { model: foGames, as: "foGame" },
+  });
+  const gameSetup = { ...game.toJSON(), ...game.foGame.toJSON() };
+  delete gameSetup.foGame;
+  return gameSetup;
+};
+
+const editGameSetup = async (gameId: number, gameSetup: editGameSetup) => {
+  const game = await games.findByPk(gameId, {
+    include: { model: foGames, as: "foGame" },
+  });
+  for (const [property, value] of Object.entries(gameSetup)) {
+    game[property] = value;
+    game.foGame[property] = value;
+  }
+  await game.save();
+};
+
+export { add, view, getGameSetup, editGameSetup, editCarSetup };
