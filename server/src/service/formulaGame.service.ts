@@ -6,7 +6,6 @@ import { foTracks } from "../models/foTracks";
 import { games, gamesAttributes } from "../models/games";
 import { gamesUsers } from "../models/gamesUsers";
 import { users, usersAttributes } from "../models/users";
-import { NotFoundError } from "../utils/errors";
 
 const config = {
   maxCarsPerPlayer: 15,
@@ -102,9 +101,14 @@ const editGameSetup = async (gameId: number, gameSetup: gameSetup) => {
     game.foGame[property] = value;
   }
   await game.save();
+  await game.foGame.save();
+
+  // @todo Move the constant out
+  await gamesUsers.update({ readyState: "N" }, { where: { gameId: gameId } });
 };
 
 const editCarSetup = async (
+  userId: number,
   gameId: number,
   foCarId: number,
   foCarDamages: [foDamagesAttributes]
@@ -119,8 +123,58 @@ const editCarSetup = async (
     currentDamage.wearPoints = foCarDamage.wearPoints;
     currentDamage.save();
   }
-  // @todo update foCar damages
+
+  await setUserReady({ gameId: gameId, userId: userId, isReady: false });
 };
 
-export default { add, join, getGameSetup, editGameSetup, editCarSetup };
+const setUserReady = async ({
+  gameId,
+  userId,
+  isReady,
+}: {
+  gameId: number;
+  userId: number;
+  isReady: boolean;
+}) => {
+  // first figure out if the user
+  if (!isReady) {
+    // @todo Move this value "N" into a constants file
+    await gamesUsers.update(
+      { readyState: "N" },
+      { where: { gameId: gameId, userId: userId } }
+    );
+    return;
+  } else {
+    const game = await getGameSetup(gameId);
+
+    // @ts-ignore
+    const userFoCars: [foCars] = game.foCars;
+    // all user's cars have to have the correct number of WP assigned
+    const allCarsCorrectWearPoints = userFoCars
+      .slice(0, game.carsPerPlayer)
+      .filter((foCar) => foCar.userId === userId)
+      .every(
+        (foCar) =>
+          foCar.foDamages.reduce((carry, next) => carry + next.wearPoints, 0) ==
+          game.wearPoints
+      );
+    if (allCarsCorrectWearPoints) {
+      // @todo Move this value "R" into a constants file
+      await gamesUsers.update(
+        { readyState: "R" },
+        { where: { gameId: gameId, userId: userId } }
+      );
+    }
+    return;
+  }
+};
+
+export default {
+  add,
+  join,
+  getGameSetup,
+  editGameSetup,
+  editCarSetup,
+  setUserReady,
+};
 export { gameSetup };

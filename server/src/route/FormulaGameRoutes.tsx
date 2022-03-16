@@ -8,7 +8,7 @@ import {
   authenticateToken,
 } from "../service/authentication.service";
 import formulaSvc, { gameSetup } from "../service/formulaGame.service";
-import { NotFoundError, UnauthorizedError } from "../utils/errors";
+import { UnauthorizedError } from "../utils/errors";
 import { foDamagesAttributes } from "../models/foDamages";
 
 // @todo Move to constants enum, see the hard-coded value in GameRoutes.tsx
@@ -99,10 +99,10 @@ const canEditCarSetup = async (
   req: Request & { user: usersAttributes }
 ): Promise<Boolean> => {
   const game = await games.findByPk(req.params.gameId);
+  // @todo Move this hard-coded value in a const
   if (game.gameStateId != newGameStateId) {
     return false;
   }
-  // @todo Move this hard-coded value in a const
   const foCar = await foCars.findOne({
     where: { userId: req.user.id, id: req.params.foCarId, gameId: game.id },
   });
@@ -111,18 +111,46 @@ const canEditCarSetup = async (
 
 const postCarSetupRoute = router.post("/:gameId/setup/car/:foCarId", [
   (req, res, next) => authenticate(req, res, next),
-  (req: Request & { app: { pubSub: PubSubJS.Base } }, res: Response) => {
+  (
+    req: Request & { app: { pubSub: PubSubJS.Base }; user: usersAttributes },
+    res: Response
+  ) => {
     const gameId = parseInt(req.params.gameId);
     const foCarId = parseInt(req.params.foCarId);
     const payload: [foDamagesAttributes] = req.body;
     authorize(req, res, canEditCarSetup).then(async () => {
-      await formulaSvc.editCarSetup(gameId, foCarId, payload);
+      await formulaSvc.editCarSetup(req.user.id, gameId, foCarId, payload);
       // @todo Add the setup edit functionality first
       const gameSetup = await formulaSvc.getGameSetup(gameId);
       console.log(gameSetup);
       req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
       res.send(gameSetup);
     });
+  },
+]);
+
+const postSetUserReady = router.post("/:gameId/setup/ready", [
+  (req, res, next) => authenticate(req, res, next),
+  (
+    req: Request & { app: { pubSub: PubSubJS.Base }; user: usersAttributes },
+    res: Response
+  ) => {
+    const gameId = parseInt(req.params.gameId);
+    const payload: { isReady: boolean } = req.body;
+    formulaSvc
+      .setUserReady({
+        gameId: gameId,
+        userId: req.user.id,
+        isReady: payload.isReady,
+      })
+      .then(async () => {
+        const gameSetup = await formulaSvc.getGameSetup(gameId);
+        req.app.pubSub.publish(
+          setupSubscription + req.params.gameId,
+          gameSetup
+        );
+        res.send(gameSetup);
+      });
   },
 ]);
 
