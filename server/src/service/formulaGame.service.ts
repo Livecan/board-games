@@ -122,6 +122,5 @@ const editCarSetup = async (
   // @todo update foCar damages
 };
 
-export { add, join, getGameSetup, editGameSetup, editCarSetup };
 export default { add, join, getGameSetup, editGameSetup, editCarSetup };
 export { gameSetup };

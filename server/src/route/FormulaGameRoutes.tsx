@@ -7,13 +7,7 @@ import {
   authenticate,
   authenticateToken,
 } from "../service/authentication.service";
-import {
-  add,
-  editCarSetup,
-  editGameSetup,
-  gameSetup,
-  getGameSetup,
-} from "../service/formulaGame.service";
+import formulaSvc, { gameSetup } from "../service/formulaGame.service";
 import { NotFoundError, UnauthorizedError } from "../utils/errors";
 import { foDamagesAttributes } from "../models/foDamages";
 
@@ -27,10 +21,11 @@ expressWebSocket(router);
 
 const setupSubscription = "formula/setup/";
 
-router.route("/add").post([
+const postAddGameRoute = router.route("/add").post([
   (req, res, next) => authenticate(req, res, next),
   (req: Request & { user: users }, res: Response) => {
-    add(req.user, req.body.name)
+    formulaSvc
+      .add(req.user, req.body.name)
       .then((gameId) => res.redirect(`${req.baseUrl}/${gameId}/setup`))
       .catch((e) => {
         throw e;
@@ -38,21 +33,8 @@ router.route("/add").post([
   },
 ]);
 
-router.route("/:gameId").get((req, res) => {
-  view(parseInt(req.params.gameId))
-    .then((response) => res.send(response))
-    .catch((e) => {
-      if (e instanceof NotFoundError) {
-        res.sendStatus(404).send("Game not found");
-      } else {
-        res.sendStatus(500).send();
-        throw e;
-      }
-    });
-});
-
 // @ts-ignore
-router.ws(
+const getGameSubscriptionRoute = router.ws(
   "/:gameId/setup",
   (ws, req: Request & { app: { pubSub: PubSubJS.Base } }) => {
     ws.on("message", async (msg: string) => {
@@ -91,7 +73,7 @@ const canEditGameSetup = async (
   return game.gameStateId == newGameStateId && game.creatorId == req.user.id;
 };
 
-router.post("/:gameId/setup", [
+const postGameSetupRoute = router.post("/:gameId/setup", [
   (req, res, next) => authenticate(req, res, next),
   (
     req: Request & {
@@ -103,9 +85,9 @@ router.post("/:gameId/setup", [
     const gameId = parseInt(req.params.gameId);
     const payload: gameSetup = req.body;
     authorize(req, res, canEditGameSetup).then(async () => {
-      await editGameSetup(gameId, payload);
+      await formulaSvc.editGameSetup(gameId, payload);
       // @todo Add the setup edit functionality first
-      const gameSetup = await getGameSetup(gameId);
+      const gameSetup = await formulaSvc.getGameSetup(gameId);
       console.log(gameSetup);
       req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
       res.send(gameSetup);
@@ -127,16 +109,16 @@ const canEditCarSetup = async (
   return foCar != null;
 };
 
-router.post("/:gameId/setup-car/:foCarId", [
+const postCarSetupRoute = router.post("/:gameId/setup/car/:foCarId", [
   (req, res, next) => authenticate(req, res, next),
   (req: Request & { app: { pubSub: PubSubJS.Base } }, res: Response) => {
     const gameId = parseInt(req.params.gameId);
     const foCarId = parseInt(req.params.foCarId);
     const payload: [foDamagesAttributes] = req.body;
     authorize(req, res, canEditCarSetup).then(async () => {
-      await editCarSetup(gameId, foCarId, payload);
+      await formulaSvc.editCarSetup(gameId, foCarId, payload);
       // @todo Add the setup edit functionality first
-      const gameSetup = await getGameSetup(gameId);
+      const gameSetup = await formulaSvc.getGameSetup(gameId);
       console.log(gameSetup);
       req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
       res.send(gameSetup);
