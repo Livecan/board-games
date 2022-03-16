@@ -24,12 +24,20 @@ const join = async (gameId: number, userId: number): Promise<games> => {
 };
 
 const getRecentNewGameModified = async () => {
-  return await games.findAll({where: {gameStateId: 1}, attributes: [[sequelize.fn('max', sequelize.col('modified')), 'recentlyModified']]});
-}
+  return await games.findAll({
+    where: { gameStateId: 1 },
+    attributes: [
+      [sequelize.fn("max", sequelize.col("modified")), "recentlyModified"],
+    ],
+  });
+};
 
 const getNewGames = async () => {
   // @todo Put gameStateId into a relevant place for constants
-  return await games.findAll({where: {gameStateId: 1}, order: [[sequelize.col('modified'), 'DESC']]});
-}
+  return await games.findAll({
+    where: { gameStateId: 1 },
+    order: [[sequelize.col("modified"), "DESC"]],
+  });
+};
 
-export { view, join, getRecentNewGameModified, getNewGames };
+export default { view, join, getRecentNewGameModified, getNewGames };

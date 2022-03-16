@@ -25,7 +25,7 @@ const postAddGameRoute = router.route("/add").post([
   (req, res, next) => authenticate(req, res, next),
   (req: Request & { user: users }, res: Response) => {
     formulaSvc
-      .add(req.user, req.body.name)
+      .add({ user: req.user, name: req.body.name })
       .then((gameId) => res.redirect(`${req.baseUrl}/${gameId}/setup`))
       .catch((e) => {
         throw e;
@@ -85,9 +85,9 @@ const postGameSetupRoute = router.post("/:gameId/setup", [
     const gameId = parseInt(req.params.gameId);
     const payload: gameSetup = req.body;
     authorize(req, res, canEditGameSetup).then(async () => {
-      await formulaSvc.editGameSetup(gameId, payload);
+      await formulaSvc.editGameSetup({ gameId: gameId, gameSetup: payload });
       // @todo Add the setup edit functionality first
-      const gameSetup = await formulaSvc.getGameSetup(gameId);
+      const gameSetup = await formulaSvc.getGameSetup({ gameId: gameId });
       console.log(gameSetup);
       req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
       res.send(gameSetup);
@@ -119,9 +119,14 @@ const postCarSetupRoute = router.post("/:gameId/setup/car/:foCarId", [
     const foCarId = parseInt(req.params.foCarId);
     const payload: [foDamagesAttributes] = req.body;
     authorize(req, res, canEditCarSetup).then(async () => {
-      await formulaSvc.editCarSetup(req.user.id, gameId, foCarId, payload);
+      await formulaSvc.editCarSetup({
+        userId: req.user.id,
+        gameId: gameId,
+        foCarId: foCarId,
+        foCarDamages: payload,
+      });
       // @todo Add the setup edit functionality first
-      const gameSetup = await formulaSvc.getGameSetup(gameId);
+      const gameSetup = await formulaSvc.getGameSetup({ gameId: gameId });
       console.log(gameSetup);
       req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
       res.send(gameSetup);
@@ -144,7 +149,7 @@ const postSetUserReady = router.post("/:gameId/setup/ready", [
         isReady: payload.isReady,
       })
       .then(async () => {
-        const gameSetup = await formulaSvc.getGameSetup(gameId);
+        const gameSetup = await formulaSvc.getGameSetup({ gameId: gameId });
         req.app.pubSub.publish(
           setupSubscription + req.params.gameId,
           gameSetup

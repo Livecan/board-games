@@ -11,10 +11,13 @@ const config = {
   maxCarsPerPlayer: 15,
 };
 
-const add = async (
-  user: usersAttributes,
-  name: string | null
-): Promise<number> => {
+const add = async ({
+  user,
+  name,
+}: {
+  user: usersAttributes;
+  name: string | null;
+}): Promise<number> => {
   const foTrackId = 1;
   const foTrack = await foTracks.findByPk(foTrackId);
   const game = games.build({
@@ -29,7 +32,7 @@ const add = async (
     .build({ gameId: game.id, foTrackId: foTrackId, carsPerPlayer: 2 })
     .save();
   for (let i = config.maxCarsPerPlayer; i > 0; i--) {
-    await addCar(user.id, game.id);
+    await addCar({ userId: user.id, gameId: game.id });
   }
   try {
     return game.id;
@@ -38,13 +41,13 @@ const add = async (
   }
 };
 
-const join = async (gameId: number, userId: number) => {
+const join = async ({ gameId, userId }: { gameId: number; userId: number }) => {
   try {
     const gameUser = await gamesUsers.findOrCreate({
       where: { gameId: gameId, userId: userId },
     });
     for (let i = config.maxCarsPerPlayer; i > 0; i--) {
-      await addCar(userId, gameId);
+      await addCar({ userId: userId, gameId: gameId });
     }
     return gameId;
   } catch (e) {
@@ -52,7 +55,13 @@ const join = async (gameId: number, userId: number) => {
   }
 };
 
-const addCar = async (userId: number, gameId: number): Promise<foCars> => {
+const addCar = async ({
+  userId,
+  gameId,
+}: {
+  userId: number;
+  gameId: number;
+}): Promise<foCars> => {
   const foCar = await foCars.build({ userId: userId, gameId: gameId }).save();
   await Promise.all(
     (
@@ -68,7 +77,11 @@ const addCar = async (userId: number, gameId: number): Promise<foCars> => {
 
 type gameSetup = foGamesAttributes & gamesAttributes;
 
-const getGameSetup = async (gameId: number): Promise<gameSetup> => {
+const getGameSetup = async ({
+  gameId,
+}: {
+  gameId: number;
+}): Promise<gameSetup> => {
   const game = await games.findByPk(gameId, {
     include: [
       { model: foGames, as: "foGame" },
@@ -92,7 +105,13 @@ const getGameSetup = async (gameId: number): Promise<gameSetup> => {
   return gameSetup;
 };
 
-const editGameSetup = async (gameId: number, gameSetup: gameSetup) => {
+const editGameSetup = async ({
+  gameId,
+  gameSetup,
+}: {
+  gameId: number;
+  gameSetup: gameSetup;
+}) => {
   const game = await games.findByPk(gameId, {
     include: { model: foGames, as: "foGame" },
   });
@@ -107,12 +126,17 @@ const editGameSetup = async (gameId: number, gameSetup: gameSetup) => {
   await gamesUsers.update({ readyState: "N" }, { where: { gameId: gameId } });
 };
 
-const editCarSetup = async (
-  userId: number,
-  gameId: number,
-  foCarId: number,
-  foCarDamages: [foDamagesAttributes]
-) => {
+const editCarSetup = async ({
+  userId,
+  gameId,
+  foCarId,
+  foCarDamages,
+}: {
+  userId: number;
+  gameId: number;
+  foCarId: number;
+  foCarDamages: [foDamagesAttributes];
+}) => {
   const currentDamages = await foDamages.findAll({
     where: { foCarId: foCarId },
   });
@@ -145,7 +169,7 @@ const setUserReady = async ({
     );
     return;
   } else {
-    const game = await getGameSetup(gameId);
+    const game = await getGameSetup({ gameId: gameId });
 
     // @ts-ignore
     const userFoCars: [foCars] = game.foCars;
