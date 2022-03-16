@@ -13,7 +13,6 @@ import {
   editGameSetup,
   gameSetup,
   getGameSetup,
-  view,
 } from "../service/formulaGame.service";
 import { NotFoundError, UnauthorizedError } from "../utils/errors";
 import { foDamagesAttributes } from "../models/foDamages";
@@ -30,9 +29,9 @@ const setupSubscription = "formula/setup/";
 
 router.route("/add").post([
   (req, res, next) => authenticate(req, res, next),
-  (req: Request & { user: users }, res: Response, next: NextFunction) => {
+  (req: Request & { user: users }, res: Response) => {
     add(req.user, req.body.name)
-      .then((game) => res.redirect(`${req.baseUrl}/${game.id}/setup`))
+      .then((gameId) => res.redirect(`${req.baseUrl}/${gameId}/setup`))
       .catch((e) => {
         throw e;
       });

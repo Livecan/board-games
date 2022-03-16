@@ -4,10 +4,17 @@ import { foGames, foGamesAttributes } from "../models/foGames";
 import { foTracks } from "../models/foTracks";
 import { games, gamesAttributes } from "../models/games";
 import { gamesUsers } from "../models/gamesUsers";
-import { users } from "../models/users";
+import { users, usersAttributes } from "../models/users";
 import { NotFoundError } from "../utils/errors";
 
-const add = async (user: users, name: string | null): Promise<games> => {
+const config = {
+  maxCarsPerPlayer: 15,
+};
+
+const add = async (
+  user: usersAttributes,
+  name: string | null
+): Promise<number> => {
   const foTrackId = 1;
   const foTrack = await foTracks.findByPk(foTrackId);
   const game = games.build({
@@ -18,13 +25,14 @@ const add = async (user: users, name: string | null): Promise<games> => {
   });
   await game.save();
   await gamesUsers.build({ userId: user.id, gameId: game.id }).save();
-  await foGames
+  const foGame = await foGames
     .build({ gameId: game.id, foTrackId: foTrackId, carsPerPlayer: 2 })
     .save();
-  // @todo: initialize cars - in a separate function that will be shared
+  for (let i = config.maxCarsPerPlayer; i > 0; i--) {
+    await addCar(user.id, game.id);
+  }
   try {
-    // @todo: use the get setup function here instead
-    return game;
+    return game.id;
   } catch (e) {
     throw e;
   }
@@ -43,10 +51,18 @@ const view = async (gameId: number): Promise<Object> => {
       { model: foGames, as: "foGame" },
     ],
   });
-  if (game === null) {
-    throw new NotFoundError();
-  }
-  return game;
+const addCar = async (userId: number, gameId: number): Promise<foCars> => {
+  const foCar = await foCars.build({ userId: userId, gameId: gameId }).save();
+  await Promise.all(
+    (
+      await foEDamageTypes.findAll()
+    ).map(async (foEDamageType) => {
+      await foDamages
+        .build({ foCarId: foCar.id, type: foEDamageType.id, wearPoints: 3 })
+        .save();
+    })
+  );
+  return foCar;
 };
 
 type gameSetup = foGamesAttributes & gamesAttributes;

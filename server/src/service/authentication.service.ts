@@ -52,7 +52,7 @@ const authenticate = async (
   req,
   res,
   next: NextFunction,
-  onAuthenticationFailed = true
+  throwsOnAuthenticationFailedError = true
 ): Promise<void> => {
   try {
     const jwtToken = req.headers?.authorization;
@@ -60,7 +60,7 @@ const authenticate = async (
     next();
   } catch (e) {
     // @todo Is this always correct?
-    if (onAuthenticationFailed === true) {
+    if (throwsOnAuthenticationFailedError === true) {
       res.sendStatus(401).send("Authentication failed");
     }
     throw e;
