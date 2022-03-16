@@ -1,5 +1,6 @@
 import { foCars } from "../models/foCars";
 import { foDamages, foDamagesAttributes } from "../models/foDamages";
+import { foEDamageTypes } from "../models/foEDamageTypes";
 import { foGames, foGamesAttributes } from "../models/foGames";
 import { foTracks } from "../models/foTracks";
 import { games, gamesAttributes } from "../models/games";
@@ -38,19 +39,20 @@ const add = async (
   }
 };
 
-const view = async (gameId: number): Promise<Object> => {
-  // @todo Consider promise rejection problems here
-  const game = await games.findByPk(gameId, {
-    include: [
-      {
-        model: gamesUsers,
-        as: "gamesUsers",
-        // @ts-ignore
-        include: { model: users, as: "user", attributes: ["id", "name"] },
-      },
-      { model: foGames, as: "foGame" },
-    ],
-  });
+const join = async (gameId: number, userId: number) => {
+  try {
+    const gameUser = await gamesUsers.findOrCreate({
+      where: { gameId: gameId, userId: userId },
+    });
+    for (let i = config.maxCarsPerPlayer; i > 0; i--) {
+      await addCar(userId, gameId);
+    }
+    return gameId;
+  } catch (e) {
+    throw e;
+  }
+};
+
 const addCar = async (userId: number, gameId: number): Promise<foCars> => {
   const foCar = await foCars.build({ userId: userId, gameId: gameId }).save();
   await Promise.all(
@@ -71,6 +73,12 @@ const getGameSetup = async (gameId: number): Promise<gameSetup> => {
   const game = await games.findByPk(gameId, {
     include: [
       { model: foGames, as: "foGame" },
+      {
+        model: gamesUsers,
+        as: "gamesUsers",
+        // @ts-ignore
+        include: [{ model: users, as: "user", attributes: ["id", "name"] }],
+      },
       {
         model: foCars,
         as: "foCars",
@@ -114,4 +122,6 @@ const editCarSetup = async (
   // @todo update foCar damages
 };
 
-export { add, view, getGameSetup, editGameSetup, gameSetup, editCarSetup };
+export { add, join, getGameSetup, editGameSetup, editCarSetup };
+export default { add, join, getGameSetup, editGameSetup, editCarSetup };
+export { gameSetup };

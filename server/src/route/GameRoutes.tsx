@@ -1,5 +1,6 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import expressWebSocket from "express-ws";
+import { games } from "../models/games";
 import { authenticate } from "../service/authentication.service";
 import {
   view,
@@ -7,14 +8,18 @@ import {
   getRecentNewGameModified,
   getNewGames,
 } from "../service/game.service";
+import FormulaService from "../service/formulaGame.service";
 import { NotFoundError } from "../utils/errors";
 import { establishWebSocketConnection } from "../utils/webSocketUtils";
+import { usersAttributes } from "../models/users";
 
 const router = express.Router();
 
 // @ts-ignore
 expressWebSocket(router);
 
+// @todo Rewrite this subscriber to a simpler version,
+// as no bi-directional messaging is expected after authentication
 // @ts-ignore
 router.ws("/", (ws, req) => {
   establishWebSocketConnection(
@@ -61,12 +66,23 @@ router.route("/:gameId").get((req, res) => {
 
 router.route("/:gameId/join").post([
   (req, res, next) => authenticate(req, res, next),
-  (req, res) => {
-    join(req.params.gameId, req.user.id)
-      .then((game) => res.send(game))
-      .catch((e) => {
-        throw e;
-      });
+  (
+    req: Request & { params: { gameId: string }; user: usersAttributes },
+    res: Response
+  ) => {
+    const gameId = parseInt(req.params.gameId);
+    games.findByPk(gameId).then((game) => {
+      switch (game.gameTypeId) {
+        // @todo Move hard coded Game Types into const enum - 2 is for Formula game
+        case 2:
+          FormulaService.join(gameId, req.user.id);
+          break;
+        default:
+          join(gameId, req.user.id);
+          break;
+      }
+      res.send(view(gameId));
+    });
   },
 ]);
 

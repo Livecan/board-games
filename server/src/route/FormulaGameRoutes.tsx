@@ -1,4 +1,4 @@
-import express, { NextFunction, Request, Response } from "express";
+import express, { Request, Response } from "express";
 import expressWebSocket from "express-ws";
 import { games } from "../models/games";
 import { foCars } from "../models/foCars";
