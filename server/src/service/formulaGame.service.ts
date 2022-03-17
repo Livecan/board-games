@@ -43,11 +43,16 @@ const add = async ({
 
 const join = async ({ gameId, userId }: { gameId: number; userId: number }) => {
   try {
-    const gameUser = await gamesUsers.findOrCreate({
+    await gamesUsers.findOrCreate({
       where: { gameId: gameId, userId: userId },
     });
-    for (let i = config.maxCarsPerPlayer; i > 0; i--) {
-      await addCar({ userId: userId, gameId: gameId });
+    if (
+      (await foCars.findOne({ where: { gameId: gameId, userId: userId } })) ==
+      null
+    ) {
+      for (let i = config.maxCarsPerPlayer; i > 0; i--) {
+        await addCar({ userId: userId, gameId: gameId });
+      }
     }
     return gameId;
   } catch (e) {
@@ -137,15 +142,11 @@ const editCarSetup = async ({
   foCarId: number;
   foCarDamages: [foDamagesAttributes];
 }) => {
-  const currentDamages = await foDamages.findAll({
-    where: { foCarId: foCarId },
-  });
   for (const foCarDamage of foCarDamages) {
-    const currentDamage = currentDamages.find(
-      (currentDamage) => currentDamage.type == foCarDamage.type
+    await foDamages.update(
+      { wearPoints: Math.max(1, foCarDamage.wearPoints) },
+      { where: { foCarId: foCarId, type: foCarDamage.type } }
     );
-    currentDamage.wearPoints = foCarDamage.wearPoints;
-    currentDamage.save();
   }
 
   await setUserReady({ gameId: gameId, userId: userId, isReady: false });
