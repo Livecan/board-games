@@ -180,4 +180,15 @@ const postStart = router.post("/:gameId/start", [
   },
 ]);
 
+const getTrack = router.get("/:gameId/track", async (req, res) => {
+  const gameId = parseInt(req.params.gameId);
+  formulaSvc
+    .getTrack({ gameId: gameId })
+    .then((track) => res.send(track))
+    .catch((e) => {
+      res.sendStatus(500);
+      throw e;
+    });
+});
+
 export default router;

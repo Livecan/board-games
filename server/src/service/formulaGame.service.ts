@@ -1,8 +1,10 @@
 import { Op } from "sequelize";
 import { foCars } from "../models/foCars";
+import { foCurves } from "../models/foCurves";
 import { foDamages, foDamagesAttributes } from "../models/foDamages";
 import { foEDamageTypes } from "../models/foEDamageTypes";
 import { foGames, foGamesAttributes } from "../models/foGames";
+import { foPosition2Positions } from "../models/foPosition2Positions";
 import { foPositions } from "../models/foPositions";
 import { foTracks } from "../models/foTracks";
 import { games, gamesAttributes } from "../models/games";
@@ -284,6 +286,51 @@ const start = async ({ gameId }: { gameId: number }) => {
   }
 };
 
+interface gameIdParam {
+  gameId: number;
+}
+
+interface foTrackIdParam {
+  foTrackId: number;
+}
+
+const getTrack = async (
+  params: (gameIdParam | foTrackIdParam) & {
+    include?: { foPosition2Position?: Boolean };
+  }
+) => {
+  let foTrackId;
+  if ("foTrackId" in params) {
+    foTrackId = params.foTrackId;
+  } else {
+    foTrackId = (
+      await games.findByPk(params.gameId, {
+        include: { model: foGames, as: "foGame" },
+      })
+    ).foGame.foTrackId;
+  }
+
+  return await foTracks.findByPk(foTrackId, {
+    include: [
+      {
+        model: foPositions,
+        as: "foPositions",
+        ...(params?.include?.foPosition2Position
+          ? {
+              include: [
+                {
+                  model: foPosition2Positions,
+                  as: "foPosition2Positions",
+                },
+              ],
+            }
+          : {}),
+      },
+      { model: foCurves, as: "foCurves" },
+    ],
+  });
+};
+
 export default {
   add,
   join,
@@ -292,5 +339,6 @@ export default {
   editCarSetup,
   setUserReady,
   start,
+  getTrack,
 };
 export { gameSetup };
