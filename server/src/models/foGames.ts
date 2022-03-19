@@ -10,12 +10,13 @@ export interface foGamesAttributes {
   wearPoints: number;
   laps: number;
   pitRuleId?: number;
+  techPitstops: number;
   created: Date;
 }
 
 export type foGamesPk = "gameId";
 export type foGamesId = foGames[foGamesPk];
-export type foGamesOptionalAttributes = "carsPerPlayer" | "wearPoints" | "laps" | "pitRuleId" | "created";
+export type foGamesOptionalAttributes = "carsPerPlayer" | "wearPoints" | "laps" | "pitRuleId" | "techPitstops" | "created";
 export type foGamesCreationAttributes = Optional<foGamesAttributes, foGamesOptionalAttributes>;
 
 export class foGames extends Model<foGamesAttributes, foGamesCreationAttributes> implements foGamesAttributes {
@@ -25,6 +26,7 @@ export class foGames extends Model<foGamesAttributes, foGamesCreationAttributes>
   wearPoints!: number;
   laps!: number;
   pitRuleId?: number;
+  techPitstops!: number;
   created!: Date;
 
   // foGames belongsTo foTracks via foTrackId
@@ -81,6 +83,12 @@ export class foGames extends Model<foGamesAttributes, foGamesCreationAttributes>
       type: DataTypes.INTEGER,
       allowNull: true,
       field: 'pit_rule_id'
+    },
+    techPitstops: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      field: 'tech_pitstops'
     },
     created: {
       type: DataTypes.DATE,
