@@ -1,11 +1,14 @@
+import { Op } from "sequelize";
 import { foCars } from "../models/foCars";
 import { foDamages, foDamagesAttributes } from "../models/foDamages";
 import { foEDamageTypes } from "../models/foEDamageTypes";
 import { foGames, foGamesAttributes } from "../models/foGames";
+import { foPositions } from "../models/foPositions";
 import { foTracks } from "../models/foTracks";
 import { games, gamesAttributes } from "../models/games";
 import { gamesUsers } from "../models/gamesUsers";
 import { users, usersAttributes } from "../models/users";
+import { PreconditionRequiredError } from "../utils/errors";
 
 const config = {
   maxCarsPerPlayer: 15,
@@ -194,6 +197,93 @@ const setUserReady = async ({
   }
 };
 
+const start = async ({ gameId }: { gameId: number }) => {
+  const game = await games.findByPk(gameId, {
+    include: [
+      { model: foGames, as: "foGame" },
+      { model: gamesUsers, as: "gamesUsers" },
+      { model: foCars, as: "foCars" },
+    ],
+  });
+
+  const gameUsers: gamesUsers[] = game.gamesUsers;
+
+  // First, all users must be ready to start
+  // @todo Move hard-coded "R" into constants
+  if (gameUsers.every((gameUser) => gameUser.readyState == "R")) {
+    // We set the game to started
+    // @todo Move the hard-coded "2" into constants
+    await games.update({ gameStateId: 2 }, { where: { id: gameId } });
+
+    // We need to remove each user's excess cars
+    //const gameCars = await foCars.findAll({ where: { gameId: gameId } });
+    await Promise.all(
+      gameUsers.map(async (gameUser) => {
+        await Promise.all(
+          game.foCars
+            .filter((gameCar) => gameCar.userId == gameUser.userId)
+            .map(async (gameCar, userCarIndex) => {
+              if (userCarIndex >= game.foGame.carsPerPlayer) {
+                await gameCar.destroy();
+              }
+            })
+        );
+      })
+    );
+
+    game.foCars = await game.getFoCars();
+
+    // @todo Setting up pitstops global and for cars - later; for now zero stops - see next line
+    game.foCars.forEach(
+      (foCar) => (foCar.techPitstopsLeft = game.foGame.techPitstops)
+    );
+
+    // Make car teams - if 2 per player, then each player has team, otherwise assign first two cars team 1, second 2 team 2, ...
+    if (game.foGame.carsPerPlayer == 2) {
+      // Each player will have cars in the same team
+      gameUsers.forEach((gameUser, teamNumber) =>
+        game.foCars
+          .filter((car) => car.userId == gameUser.userId)
+          .forEach((car) => (car.team = teamNumber + 1))
+      );
+    } else {
+      // Players do not have two cars each, then cars are randomly assigned to teams
+      let teamNumber = 1;
+      const maxTeamNumber = 5;
+      game.foCars.sort(() => Math.random() - 0.5);
+      game.foCars.forEach((car) => {
+        car.team = teamNumber;
+        // Roll through the team numbers
+        teamNumber = teamNumber == maxTeamNumber ? 1 : teamNumber + 1;
+      });
+    }
+
+    // Assign starting positions in random order and each car in "RACING" state
+    game.foCars.sort(() => Math.random() - 0.5);
+
+    const startingPositions = await foPositions.findAll({
+      where: {
+        foTrackId: game.foGame.foTrackId,
+        startingPosition: { [Op.not]: null },
+      },
+    });
+    startingPositions.sort((a, b) => a.startingPosition - b.startingPosition);
+
+    game.foCars.forEach((car, carIndex) => {
+      car.foPositionId = startingPositions[carIndex].id;
+      // @todo Hard-coded value move to contants/enum
+      car.state = "R";
+      car.order = carIndex + 1;
+    });
+
+    game.foCars.forEach((car) => car.save());
+
+    return game;
+  } else {
+    throw new PreconditionRequiredError("All players must be in ready state");
+  }
+};
+
 export default {
   add,
   join,
@@ -201,5 +291,6 @@ export default {
   editGameSetup,
   editCarSetup,
   setUserReady,
+  start,
 };
 export { gameSetup };

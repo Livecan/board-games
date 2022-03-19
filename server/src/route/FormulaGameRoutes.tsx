@@ -8,7 +8,7 @@ import {
   authenticateToken,
 } from "../service/authentication.service";
 import formulaSvc, { gameSetup } from "../service/formulaGame.service";
-import { UnauthorizedError } from "../utils/errors";
+import { PreconditionRequiredError, UnauthorizedError } from "../utils/errors";
 import { foDamagesAttributes } from "../models/foDamages";
 
 // @todo Move to constants enum, see the hard-coded value in GameRoutes.tsx
@@ -156,6 +156,27 @@ const postSetUserReady = router.post("/:gameId/setup/ready", [
         );
         res.send(gameSetup);
       });
+  },
+]);
+
+const postStart = router.post("/:gameId/start", [
+  (req, res, next) => authenticate(req, res, next),
+  (
+    req: Request & { app: { pubSub: PubSubJS.Base }; user: usersAttributes },
+    res: Response
+  ) => {
+    const gameId = parseInt(req.params.gameId);
+    authorize(req, res, canEditGameSetup).then(async () => {
+      formulaSvc
+        .start({ gameId: gameId })
+        .then((game) => res.send(game))
+        .catch((e) => {
+          if (e instanceof PreconditionRequiredError) {
+            res.sendStatus(PreconditionRequiredError.code).send(e.message);
+          }
+          throw e;
+        });
+    });
   },
 ]);
 
