@@ -23,13 +23,8 @@ const join = async (gameId: number, userId: number): Promise<games> => {
   }
 };
 
-const getRecentNewGameModified = async () => {
-  return await games.findAll({
-    where: { gameStateId: 1 },
-    attributes: [
-      [sequelize.fn("max", sequelize.col("modified")), "recentlyModified"],
-    ],
-  });
+const getRecentNewGameModified = async (): Promise<Date> => {
+  return new Date(await games.max("modified", { where: { gameStateId: 1 } }));
 };
 
 const getNewGames = async () => {
