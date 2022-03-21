@@ -98,14 +98,12 @@ const getGameSetup = async ({
       {
         model: gamesUsers,
         as: "gamesUsers",
-        // @ts-ignore
         include: [{ model: users, as: "user", attributes: ["id", "name"] }],
       },
       {
         model: foCars,
         as: "foCars",
-        // @ts-ignore
-        include: { model: foDamages, as: "foDamages" },
+        include: [{ model: foDamages, as: "foDamages" }],
       },
     ],
   });
@@ -199,7 +197,8 @@ const setUserReady = async ({
   }
 };
 
-const start = async ({ gameId }: { gameId: number }) => {
+// @todo Consider use gameIdParam interface where relevant
+const start = async ({ gameId }: gameIdParam) => {
   const game = await games.findByPk(gameId, {
     include: [
       { model: foGames, as: "foGame" },

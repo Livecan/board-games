@@ -15,8 +15,8 @@ expressWebSocket(router);
 
 // @todo Rewrite this subscriber to a simpler version,
 // as no bi-directional messaging is expected after authentication
-// @ts-ignore
 router.ws("/", (ws, req) => {
+  // @todo rewrite this in simpler fashion, see FormulaGameRoutes->getGameSubscriptionRoute
   establishWebSocketConnection(
     async (req, data, publish) => {
       // Need to start one instance of game watch. Game watch sends the list of
