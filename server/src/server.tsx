@@ -11,7 +11,7 @@ import formulaRoutes from "./route/FormulaGameRoutes";
 import App from "../../client/src/App";
 import { AuthenticationFailedError } from "./utils/errors";
 import { initModels } from "./models/init-models";
-import expressWs from "express-ws";
+import commonConfig from "../../common/src/config/config";
 
 const app = express();
 
@@ -29,12 +29,12 @@ expressWebSocket(app);
 // Initializes DB connection making it available when using models in services
 initModels(sqlConnection);
 
-app.get("/", (req, res) => {
+app.get(/^\/(?!api|resources).*/, (req, res) => {
   const app = ReactDOMServer.renderToString(<App />);
   const html = `
     <html lang="en">
     <head>
-      <script src="bundle.min.js" async defer></script>
+      <script src="/resources/bundle.min.js" async defer></script>
     </head>
     <body>
       <div id="app">${app}</div>
@@ -44,7 +44,7 @@ app.get("/", (req, res) => {
   res.send(html);
 });
 
-app.post("/login", (req, res) => {
+app.post(`/${commonConfig.apiBaseUrl}login`, (req, res) => {
   login(req.body.username, req.body.password)
     .then((token) => res.send({ jwt: token, user: req.body.username }))
     .catch((e) => {
@@ -57,10 +57,10 @@ app.post("/login", (req, res) => {
     });
 });
 
-app.use("/game", gameRoutes);
-app.use("/formula", formulaRoutes);
+app.use(`/${commonConfig.apiBaseUrl}game`, gameRoutes);
+app.use(`/${commonConfig.apiBaseUrl}formula`, formulaRoutes);
 
-app.use(express.static("./client-build"));
+app.use('/resources', express.static("./client-build"));
 
 const port = process.env.PORT || 5000;
 
