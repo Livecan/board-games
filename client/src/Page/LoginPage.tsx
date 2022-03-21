@@ -19,7 +19,7 @@ const LoginPage : React.FC = () => {
     <Container>
       <TextField sx={{display: "block"}} title="Username" placeholder="username" value={username} onChange={(e) => setUsername(e.currentTarget.value)} />
       <TextField sx={{display: "block"}} title="Password" type="password" placeholder="password" value={password} onChange={(e) => setPassword(e.currentTarget.value)} />
-      <Button disabled={hasCredentials} sx={{display: "block"}} onClick={() => userLogin(username, password)}>Login</Button>
+      <Button variant="contained" disabled={hasCredentials} sx={{display: "block"}} onClick={() => userLogin(username, password)}>Login</Button>
     </Container>
   );
 }
