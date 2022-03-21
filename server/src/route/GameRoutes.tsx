@@ -87,7 +87,7 @@ router.route("/:gameId/join").post([
           gameSvc.join(gameId, req.user.id);
           break;
       }
-      res.send(gameSvc.view(gameId));
+      gameSvc.view(gameId).then(game => res.send(game));
     });
   },
 ]);

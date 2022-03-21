@@ -1,6 +1,8 @@
 import { Button } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
+import axios from "axios";
 import React, { useContext, useState } from "react";
+import commonConfig from "../../../common/src/config/config";
 import loginContext from "../Context/LoginContext";
 import useWebSocket from "../Hook/UseWebSocketHook";
 
@@ -16,17 +18,23 @@ const columns: GridColDef[] = [
   },
 ];
 
-const GamesList: React.FC = () => {
+const GamesList = (props: {onJoinGame?({gameId, gameTypeId}: {gameId: number, gameTypeId: number})}): JSX.Element => {
   const [games, setGames] = useState([]);
   const [userData] = useContext(loginContext);
   useWebSocket(
     // @todo move the url elsewhere???
-    "ws://localhost:5000/game",
+    `ws://localhost:5000/${commonConfig.apiBaseUrl}game`,
     (msg: Object[]) => setGames(msg),
     {
       token: userData.jwt,
     }
   );
+
+  const joinGame = (gameId, gameTypeId) => {
+    console.log(`joining: ${gameId}, ${gameTypeId}`);
+    props.onJoinGame?.({gameId: gameId, gameTypeId: gameTypeId});
+  }
+
   return (
     <DataGrid
       columns={columns}
@@ -39,7 +47,11 @@ const GamesList: React.FC = () => {
           actions: (
             <Button
               variant="contained"
-              onClick={() => alert("This will get you in the game!")}
+              onClick={() => {
+                axios.post(`/${commonConfig.apiBaseUrl}game/${game.id}/join`, {}, {headers: {Authorization: userData.jwt, accept: "application/json"}})
+                  .then(response => joinGame(response.data.id, response.data.gameTypeId))
+                }
+              }
             >
               Join
             </Button>
