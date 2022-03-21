@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import * as ReactDOMServer from "react-dom/server";
+import {StaticRouter} from "react-router-dom/server";
 import React from "react";
 import expressWebSocket from "express-ws";
 import PubSub from "pubsub-js";
@@ -30,7 +31,7 @@ expressWebSocket(app);
 initModels(sqlConnection);
 
 app.get(/^\/(?!api|resources).*/, (req, res) => {
-  const app = ReactDOMServer.renderToString(<App />);
+  const app = ReactDOMServer.renderToString(<StaticRouter location={req.url}><App /></StaticRouter>);
   const html = `
     <html lang="en">
     <head>

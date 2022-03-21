@@ -18,7 +18,9 @@ const columns: GridColDef[] = [
   },
 ];
 
-const GamesList = (props: {onJoinGame?({gameId, gameTypeId}: {gameId: number, gameTypeId: number})}): JSX.Element => {
+const GamesList = (props: {
+  onJoinGame?({ gameId, gameTypeId }: { gameId: number; gameTypeId: number });
+}): JSX.Element => {
   const [games, setGames] = useState([]);
   const [userData] = useContext(loginContext);
   useWebSocket(
@@ -31,9 +33,8 @@ const GamesList = (props: {onJoinGame?({gameId, gameTypeId}: {gameId: number, ga
   );
 
   const joinGame = (gameId, gameTypeId) => {
-    console.log(`joining: ${gameId}, ${gameTypeId}`);
-    props.onJoinGame?.({gameId: gameId, gameTypeId: gameTypeId});
-  }
+    props.onJoinGame?.({ gameId: gameId, gameTypeId: gameTypeId });
+  };
 
   return (
     <DataGrid
@@ -48,10 +49,21 @@ const GamesList = (props: {onJoinGame?({gameId, gameTypeId}: {gameId: number, ga
             <Button
               variant="contained"
               onClick={() => {
-                axios.post(`/${commonConfig.apiBaseUrl}game/${game.id}/join`, {}, {headers: {Authorization: userData.jwt, accept: "application/json"}})
-                  .then(response => joinGame(response.data.id, response.data.gameTypeId))
-                }
-              }
+                axios
+                  .post(
+                    `/${commonConfig.apiBaseUrl}game/${game.id}/join`,
+                    {},
+                    {
+                      headers: {
+                        Authorization: userData.jwt,
+                        accept: "application/json",
+                      },
+                    }
+                  )
+                  .then((response) =>
+                    joinGame(response.data.id, response.data.gameTypeId)
+                  );
+              }}
             >
               Join
             </Button>
