@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Route, Routes, useNavigate } from "react-router-dom";
 import LoginContext from "./Context/LoginContext";
 import useLogin from "./Hook/UseLoginHook";
 import LoginPage from "./Page/LoginPage";
 import GamesList from "./Component/GamesList";
+import FormulaPage from "./Page/FormulaPage";
 
 const App: React.FC = () => {
   const [userData, login, logout] = useLogin(null);
@@ -33,7 +34,7 @@ const App: React.FC = () => {
                 navigateToGame(gameId, gameTypeId)
             }
           />} />
-          <Route path="/formula/:gameId" element={<p>Formula</p>} />
+          <Route path="/formula/:gameId" element={<FormulaPage />} />
         </Routes>
       )}
     </LoginContext.Provider>
