@@ -3,7 +3,7 @@ import { Route, Routes, useNavigate } from "react-router-dom";
 import LoginContext from "./Context/LoginContext";
 import useLogin from "./Hook/UseLoginHook";
 import LoginPage from "./Page/LoginPage";
-import GamesList from "./Widget/GamesList";
+import GamesList from "./Component/GamesList";
 
 const App: React.FC = () => {
   const [userData, login, logout] = useLogin(null);
