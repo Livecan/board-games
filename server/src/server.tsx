@@ -11,7 +11,7 @@ import gameRoutes from "./route/GameRoutes";
 import formulaRoutes from "./route/FormulaGameRoutes";
 import App from "../../client/src/App";
 import { AuthenticationFailedError } from "./utils/errors";
-import { initModels } from "./models/init-models";
+import { initModels } from "../../common/src/models/generated/init-models";
 import commonConfig from "../../common/src/config/config";
 
 const app = express();

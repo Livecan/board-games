@@ -1,6 +1,6 @@
 import express, { Request, Response } from "express";
 import expressWebSocket from "express-ws";
-import { games } from "../models/games";
+import { games } from "../../../common/src/models/generated/games";
 import {
   authenticate,
   authenticateToken,
@@ -8,7 +8,7 @@ import {
 import gameSvc from "../service/game.service";
 import formulaSvc from "../service/formulaGame.service";
 import { NotFoundError } from "../utils/errors";
-import { usersAttributes } from "../models/users";
+import { usersAttributes } from "../../../common/src/models/generated/users";
 
 const router = express.Router();
 

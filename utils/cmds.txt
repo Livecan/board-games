@@ -1,2 +1,0 @@
-to generate db model into ts files with camel case (for model names - --cm, property names - --cp and file names - --cf):
-  npx sequelize-auto -o .\server\src\models -d games -h localhost -u root -e mysql -l ts --cm c --cp c --cf c

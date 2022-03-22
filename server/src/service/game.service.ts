@@ -1,5 +1,5 @@
 import sequelize from "sequelize";
-import { games, gamesUsers } from "../models/init-models";
+import { games, gamesUsers } from "../../../common/src/models/generated/init-models";
 import { NotFoundError } from "../utils/errors";
 
 const view = async (gameId: number): Promise<Object> => {

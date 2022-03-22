@@ -1,15 +1,15 @@
 import express, { Request, Response } from "express";
 import expressWebSocket from "express-ws";
-import { games } from "../models/games";
-import { foCars } from "../models/foCars";
-import { users, usersAttributes } from "../models/users";
+import { games } from "../../../common/src/models/generated/games";
+import { foCars } from "../../../common/src/models/generated/foCars";
+import { users, usersAttributes } from "../../../common/src/models/generated/users";
 import {
   authenticate,
   authenticateToken,
 } from "../service/authentication.service";
 import formulaSvc, { gameSetup } from "../service/formulaGame.service";
 import { PreconditionRequiredError, UnauthorizedError } from "../utils/errors";
-import { foDamagesAttributes } from "../models/foDamages";
+import { foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
 
 // @todo Move to constants enum, see the hard-coded value in GameRoutes.tsx
 const newGameStateId = 1;
@@ -36,14 +36,17 @@ const postAddGameRoute = router.route("/add").post([
 const getGameSubscriptionRoute = router.ws(
   "/:gameId/setup",
   (ws, req: Request & { app: { pubSub: PubSubJS.Base } }) => {
+    const gameId = parseInt(req.params.gameId);
     ws.on("message", async (msg: string) => {
       const data = JSON.parse(msg);
       try {
         await authenticateToken(data.token, req);
         const subscriptionToken = req.app.pubSub.subscribe(
-          setupSubscription + req.params.gameId,
+          setupSubscription + gameId,
           (topic, data) => ws.send(JSON.stringify(data))
         );
+        formulaSvc.getGameSetup({gameId: gameId})
+          .then(gameSetup => ws.send(JSON.stringify(gameSetup)));
         ws.on("close", () => req.app.pubSub.unsubscribe(subscriptionToken));
       } catch (e) {
         ws.close(4000, "Authentication Failed");

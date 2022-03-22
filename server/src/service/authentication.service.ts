@@ -1,7 +1,7 @@
 import md5 from "md5";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { users } from "../models/init-models";
+import { users } from "../../../common/src/models/generated/init-models";
 import { AuthenticationFailedError } from "../utils/errors";
 import { NextFunction } from "express";
 
