@@ -1,23 +1,26 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 const useWebSocket = (
   url: string,
   receiveData: (message: Object) => void,
   firstMessage?: Object
 ): [sendData: (message: Object) => void, close: () => void] => {
-  const ws = new WebSocket(url);
+  const [ws, setWs] = useState(null);
   useEffect(() => {
-    ws.addEventListener("message", (e: MessageEvent) => {
+    const _ws = new WebSocket(url);
+    _ws.addEventListener("message", (e: MessageEvent) => {
       let data = JSON.parse(e.data);
       console.log(data);
       receiveData(data);
     });
-    ws.addEventListener("open", (e: Event) => {
+    _ws.addEventListener("open", (e: Event) => {
       if (firstMessage != null) {
-        ws.send(JSON.stringify(firstMessage));
+        _ws.send(JSON.stringify(firstMessage));
       }
     });
-    return () => ws.close();
+    const onDismount = () => _ws.close();
+    setWs(_ws);
+    return onDismount;
   }, []);
 
   return [
