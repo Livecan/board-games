@@ -26,7 +26,7 @@ const login = async (username: string, password: string) => {
       algorithm: "HS256",
       expiresIn: "14 days",
     });
-    return token;
+    return {jwt: token, user: {name: user.name, id: user.id}};
   } else {
     throw new AuthenticationFailedError();
   }

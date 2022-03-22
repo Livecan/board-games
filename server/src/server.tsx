@@ -47,7 +47,7 @@ app.get(/^\/(?!api|resources).*/, (req, res) => {
 
 app.post(`/${commonConfig.apiBaseUrl}login`, (req, res) => {
   login(req.body.username, req.body.password)
-    .then((token) => res.send({ jwt: token, user: req.body.username }))
+    .then((response) => res.send(response))
     .catch((e) => {
       if (e instanceof AuthenticationFailedError) {
         res.sendStatus(401).send("Authentication failed");

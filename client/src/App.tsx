@@ -4,7 +4,7 @@ import LoginContext from "./Context/LoginContext";
 import useLogin from "./Hook/UseLoginHook";
 import LoginPage from "./Page/LoginPage";
 import GamesList from "./Component/GamesList";
-import FormulaPage from "./Page/FormulaPage";
+import FormulaSetupPage from "./Page/FormulaSetupPage";
 
 const App: React.FC = () => {
   const [userData, login, logout] = useLogin(null);
@@ -34,7 +34,7 @@ const App: React.FC = () => {
                 navigateToGame(gameId, gameTypeId)
             }
           />} />
-          <Route path="/formula/:gameId" element={<FormulaPage />} />
+          <Route path="/formula/:gameId" element={<FormulaSetupPage />} />
         </Routes>
       )}
     </LoginContext.Provider>
