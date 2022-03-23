@@ -1,18 +1,22 @@
-import React, { useContext, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
+import axios from "axios";
 import { useParams } from "react-router-dom";
-import useWebSocket from "../Hook/UseWebSocketHook";
-import commonConfig from "../../../common/src/config/config";
-import loginContext from "../Context/LoginContext";
+import { useDebounce } from "usehooks-ts";
 import {
   Box,
+  BoxProps,
   Grid,
   MenuItem,
   Paper,
   Select,
   Stack,
   TextField,
+  TextFieldProps,
   Typography,
 } from "@mui/material";
+import useWebSocket from "../Hook/UseWebSocketHook";
+import commonConfig from "../../../common/src/config/config";
+import loginContext from "../Context/LoginContext";
 import { gamesAttributes } from "../../../common/src/models/generated/games";
 import { foCarsAttributes } from "../../../common/src/models/generated/foCars";
 import { gamesUsersAttributes } from "../../../common/src/models/generated/gamesUsers";
@@ -25,7 +29,7 @@ interface fullGame extends gamesAttributes, foGamesAttributes {
   gamesUsers: (gamesUsersAttributes & { user: usersAttributes })[];
 }
 
-const FlexBox = ({ sx = {}, children = {}, ...rest }) => (
+const FlexBox = ({ sx = {}, children = {}, ...rest }: BoxProps) => (
   <Box
     sx={{
       display: "flex",
@@ -40,11 +44,35 @@ const FlexBox = ({ sx = {}, children = {}, ...rest }) => (
   </Box>
 );
 
-const NumberTextField = ({ sx = {}, ...rest }) => (
+const PositiveNumberValidator = (value: string) => parseInt(value) > 0;
+
+type ValidatedNumberTextFieldProps = TextFieldProps & {
+  onChange?: (value: string) => void;
+  validate?: (value: string) => Boolean;
+};
+
+const ValidatedNumberTextField = ({
+  sx = {},
+  inputProps = {},
+  style = {},
+  onChange = null,
+  validate = null,
+  ...rest
+}: ValidatedNumberTextFieldProps) => (
   <TextField
     sx={{ margin: ".1rem", ...sx }}
-    inputProps={{ style: { textAlign: "center" } }}
-    style={{ width: "4rem" }}
+    inputProps={{
+      style: { textAlign: "right" },
+      type: "number",
+      min: 0,
+      step: 1,
+      ...inputProps,
+    }}
+    style={{ width: "4rem", ...style }}
+    onChange={(e) =>
+      (validate == null || validate(e.target.value)) &&
+      onChange?.(e.target.value)
+    }
     {...rest}
   />
 );
@@ -52,7 +80,26 @@ const NumberTextField = ({ sx = {}, ...rest }) => (
 const FormulaSetupPage: React.FC = () => {
   const [userData] = useContext(loginContext);
   const { gameId } = useParams();
-  const [game, setGame]: [fullGame, (game: fullGame) => any] = useState(null);
+  const [game, setGame] = useState<fullGame>(null);
+  const [gameUpdates, setGameUpdates] = useState<
+    gamesAttributes & foGamesAttributes
+  >(null);
+
+  const debouncedUpdate = useDebounce(gameUpdates, 1000);
+
+  useEffect(() => {
+    axios.post(
+      `/${commonConfig.apiBaseUrl}formula/${gameId}/setup`,
+      debouncedUpdate,
+      {
+        headers: {
+          Authorization: userData.jwt,
+          accept: "application/json",
+        },
+      }
+    );
+  }, [debouncedUpdate]);
+
   useWebSocket(
     // @todo Move the url elsewhere???
     // @todo Change server routes - don't use setup, but use auto-routing
@@ -96,15 +143,13 @@ const FormulaSetupPage: React.FC = () => {
                             }}
                           >
                             {car.foDamages.map((damage) => (
-                              <React.Fragment>
-                                {/* @todo Use validation rules to avoid invalid numbers, validation test on backend */}
-                                {/* @todo Only allow the user to change his/her own cars' damages */}
-                                <NumberTextField
-                                  key={damage.id}
-                                  defaultValue={damage.wearPoints}
-                                  disabled={gameUser.userId != userData.user.id}
-                                />
-                              </React.Fragment>
+                              /* @todo Use validation rules to avoid invalid numbers, validation test on backend */
+                              /* @todo Only allow the user to change his/her own cars' damages */
+                              <ValidatedNumberTextField
+                                key={damage.id}
+                                defaultValue={damage.wearPoints}
+                                disabled={gameUser.userId != userData.user.id}
+                              />
                             ))}
                           </FlexBox>
                         </Paper>
@@ -125,21 +170,71 @@ const FormulaSetupPage: React.FC = () => {
                   <Typography display="inline" sx={{ flexGrow: 1 }}>
                     Players
                   </Typography>
-                  <NumberTextField placeholder="min" defaultValue={null} />
+                  <ValidatedNumberTextField
+                    placeholder="min"
+                    value={gameUpdates?.minPlayers ?? game.minPlayers ?? ""}
+                    validate={(value) =>
+                      PositiveNumberValidator(value) &&
+                      parseInt(value) <
+                        (gameUpdates?.maxPlayers ?? game.maxPlayers)
+                    }
+                    onChange={(value) =>
+                      setGameUpdates((game) => {
+                        return { ...game, minPlayers: parseInt(value) };
+                      })
+                    }
+                  />
                   <Typography display="inline">-</Typography>
-                  <NumberTextField placeholder="max" defaultValue={null} />
+                  <ValidatedNumberTextField
+                    placeholder="max"
+                    value={gameUpdates?.maxPlayers ?? game.maxPlayers ?? ""}
+                    validate={(value) =>
+                      PositiveNumberValidator(value) &&
+                      parseInt(value) >
+                        (gameUpdates?.minPlayers ?? game.minPlayers ?? 1)
+                    }
+                    onChange={(value) =>
+                      setGameUpdates((game) => {
+                        return { ...game, maxPlayers: parseInt(value) };
+                      })
+                    }
+                  />
                 </FlexBox>
                 <FlexBox>
                   <Typography display="inline">Laps</Typography>
-                  <NumberTextField defaultValue={game.laps} />
+                  <ValidatedNumberTextField
+                    value={gameUpdates.laps ?? game.laps}
+                    validate={PositiveNumberValidator}
+                    onChange={(value) =>
+                      setGameUpdates((game) => {
+                        return { ...game, laps: parseInt(value) };
+                      })
+                    }
+                  />
                 </FlexBox>
                 <FlexBox>
                   <Typography display="inline">Wear Points</Typography>
-                  <NumberTextField defaultValue={game.wearPoints} />
+                  <ValidatedNumberTextField
+                    value={gameUpdates.wearPoints ?? game.wearPoints}
+                    validate={PositiveNumberValidator}
+                    onChange={(value) =>
+                      setGameUpdates((game) => {
+                        return { ...game, wearPoints: parseInt(value) };
+                      })
+                    }
+                  />
                 </FlexBox>
                 <FlexBox>
                   <Typography display="inline">Cars per player</Typography>
-                  <NumberTextField defaultValue={game.carsPerPlayer} />
+                  <ValidatedNumberTextField
+                    value={gameUpdates.carsPerPlayer ?? game.carsPerPlayer}
+                    validate={PositiveNumberValidator}
+                    onChange={(value) =>
+                      setGameUpdates((game) => {
+                        return { ...game, carsPerPlayer: parseInt(value) };
+                      })
+                    }
+                  />
                 </FlexBox>
               </Stack>
             </Paper>
