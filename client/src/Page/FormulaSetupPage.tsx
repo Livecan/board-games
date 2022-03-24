@@ -84,8 +84,37 @@ const FormulaSetupPage: React.FC = () => {
   const [gameUpdates, setGameUpdates] = useState<
     gamesAttributes & foGamesAttributes
   >(null);
+  const [carUpdates, setCarUpdates] = useState<
+    { carId: number; foDamages: { type: number; wearPoints: number }[] }[]
+  >([]);
+
+  const updateCarDamage = (
+    carId: number,
+    damageType: number,
+    wearPoints: number
+  ) => {
+    setCarUpdates((carUpdates) => {
+      let updateValue = [...carUpdates];
+      let currentCar = updateValue.find((car) => car.carId == carId);
+      if (currentCar == null) {
+        currentCar = { carId: carId, foDamages: [] };
+        updateValue = [...updateValue, currentCar];
+      }
+      let currentDamage = currentCar.foDamages?.find(
+        (damage) => damage.type == damageType
+      );
+      if (currentDamage == null) {
+        currentDamage = { type: damageType, wearPoints: 0 };
+        currentCar.foDamages = [...currentCar.foDamages, currentDamage];
+      }
+      currentDamage.wearPoints = wearPoints;
+
+      return updateValue;
+    });
+  };
 
   const debouncedUpdate = useDebounce(gameUpdates, 1000);
+  const debouncedCarUpdate = useDebounce(carUpdates, 1000);
 
   useEffect(() => {
     axios.post(
@@ -99,6 +128,24 @@ const FormulaSetupPage: React.FC = () => {
       }
     );
   }, [debouncedUpdate]);
+
+  useEffect(() => {
+    for (const carUpdate of debouncedCarUpdate) {
+      axios.post(
+        `/${commonConfig.apiBaseUrl}formula/${gameId}/setup/car/${carUpdate.carId}`,
+        carUpdate.foDamages.map((damage) => {
+          return { type: damage.type, wearPoints: damage.wearPoints };
+        }),
+        {
+          headers: {
+            Authorization: userData.jwt,
+            accept: "application/json",
+          },
+        }
+      );
+      // @todo Consider removing update values that are current, to potentially save few server requests and writes?
+    }
+  }, [debouncedCarUpdate]);
 
   useWebSocket(
     // @todo Move the url elsewhere???
@@ -146,8 +193,22 @@ const FormulaSetupPage: React.FC = () => {
                               /* @todo Use validation rules to avoid invalid numbers, validation test on backend */
                               /* @todo Only allow the user to change his/her own cars' damages */
                               <ValidatedNumberTextField
-                                key={damage.id}
-                                defaultValue={damage.wearPoints}
+                                key={damage.type}
+                                value={
+                                  carUpdates
+                                    ?.find((_car) => _car.carId == car.id)
+                                    ?.foDamages?.find(
+                                      (_damage) => _damage.type == damage.type
+                                    )?.wearPoints ?? damage.wearPoints
+                                }
+                                validate={PositiveNumberValidator}
+                                onChange={(value) =>
+                                  updateCarDamage(
+                                    car.id,
+                                    damage.type,
+                                    parseInt(value)
+                                  )
+                                }
                                 disabled={gameUser.userId != userData.user.id}
                               />
                             ))}
@@ -203,7 +264,7 @@ const FormulaSetupPage: React.FC = () => {
                 <FlexBox>
                   <Typography display="inline">Laps</Typography>
                   <ValidatedNumberTextField
-                    value={gameUpdates.laps ?? game.laps}
+                    value={gameUpdates?.laps ?? game.laps}
                     validate={PositiveNumberValidator}
                     onChange={(value) =>
                       setGameUpdates((game) => {
@@ -215,7 +276,7 @@ const FormulaSetupPage: React.FC = () => {
                 <FlexBox>
                   <Typography display="inline">Wear Points</Typography>
                   <ValidatedNumberTextField
-                    value={gameUpdates.wearPoints ?? game.wearPoints}
+                    value={gameUpdates?.wearPoints ?? game.wearPoints}
                     validate={PositiveNumberValidator}
                     onChange={(value) =>
                       setGameUpdates((game) => {
@@ -227,7 +288,7 @@ const FormulaSetupPage: React.FC = () => {
                 <FlexBox>
                   <Typography display="inline">Cars per player</Typography>
                   <ValidatedNumberTextField
-                    value={gameUpdates.carsPerPlayer ?? game.carsPerPlayer}
+                    value={gameUpdates?.carsPerPlayer ?? game.carsPerPlayer}
                     validate={PositiveNumberValidator}
                     onChange={(value) =>
                       setGameUpdates((game) => {
