@@ -139,16 +139,6 @@ const FormulaSetupPage: React.FC = () => {
     );
   }, [game, carUpdates]);
 
-  // The !! is for casting Boolean -> boolean
-  // @todo Move the readyState magic value in enum
-  const isCurrentUserReady = () =>
-    !!(
-      updateReadyState ||
-      (updateReadyState == null &&
-        game.gamesUsers.find((gameUser) => gameUser.userId == userData?.user.id)
-          .readyState == "R")
-    );
-
   const updateCarDamage = (
     carId: number,
     damageType: number,
