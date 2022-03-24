@@ -1,11 +1,13 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import { useDebounce } from "usehooks-ts";
 import {
   Box,
   BoxProps,
+  Button,
   Grid,
+  IconButton,
   MenuItem,
   Paper,
   Select,
@@ -14,6 +16,8 @@ import {
   TextFieldProps,
   Typography,
 } from "@mui/material";
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
+import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
 import useWebSocket from "../Hook/UseWebSocketHook";
 import commonConfig from "../../../common/src/config/config";
 import loginContext from "../Context/LoginContext";
@@ -77,6 +81,36 @@ const ValidatedNumberTextField = ({
   />
 );
 
+const UserReadyButton = ({
+  isCurrentUser,
+  isEnabled,
+  currentState = false,
+  onClick = null,
+}: {
+  isCurrentUser: boolean;
+  isEnabled: boolean;
+  currentState: boolean;
+  onClick?: (isReady: boolean) => void;
+}) =>
+  isCurrentUser ? (
+    <IconButton
+      disabled={!isEnabled}
+      onClick={() => isEnabled && onClick?.(!currentState)}
+    >
+      {!isEnabled ? (
+        <CancelOutlinedIcon color="disabled" fontSize="large" />
+      ) : currentState ? (
+        <CheckCircleOutlinedIcon color="success" fontSize="large" />
+      ) : (
+        <CancelOutlinedIcon color="error" fontSize="large" />
+      )}
+    </IconButton>
+  ) : currentState ? (
+    <CheckCircleOutlinedIcon color="success" fontSize="large" />
+  ) : (
+    <CancelOutlinedIcon color="error" fontSize="large" />
+  );
+
 const FormulaSetupPage: React.FC = () => {
   const [userData] = useContext(loginContext);
   const { gameId } = useParams();
@@ -87,6 +121,33 @@ const FormulaSetupPage: React.FC = () => {
   const [carUpdates, setCarUpdates] = useState<
     { carId: number; foDamages: { type: number; wearPoints: number }[] }[]
   >([]);
+  const [updateReadyState, setUpdateReadyState] = useState<boolean>(null);
+
+  const isUserCarsWearPointsAddUp = useMemo(() => {
+    return (
+      game != null &&
+      game.foCars
+        .filter((car) => car.userId == userData?.user.id)
+        .slice(0, game.carsPerPlayer)
+        .every(
+          (car) =>
+            car.foDamages.reduce(
+              (carry, current) => carry + current.wearPoints,
+              0
+            ) == game.wearPoints
+        )
+    );
+  }, [game, carUpdates]);
+
+  // The !! is for casting Boolean -> boolean
+  // @todo Move the readyState magic value in enum
+  const isCurrentUserReady = () =>
+    !!(
+      updateReadyState ||
+      (updateReadyState == null &&
+        game.gamesUsers.find((gameUser) => gameUser.userId == userData?.user.id)
+          .readyState == "R")
+    );
 
   const updateCarDamage = (
     carId: number,
@@ -115,6 +176,7 @@ const FormulaSetupPage: React.FC = () => {
 
   const debouncedUpdate = useDebounce(gameUpdates, 1000);
   const debouncedCarUpdate = useDebounce(carUpdates, 1000);
+  const debouncedReadyState = useDebounce(updateReadyState, 1000);
 
   useEffect(() => {
     axios.post(
@@ -147,6 +209,21 @@ const FormulaSetupPage: React.FC = () => {
     }
   }, [debouncedCarUpdate]);
 
+  useEffect(() => {
+    axios.post(
+      `/${commonConfig.apiBaseUrl}formula/${gameId}/setup/ready`,
+      {
+        isReady: debouncedReadyState,
+      },
+      {
+        headers: {
+          Authorization: userData.jwt,
+          accept: "application/json",
+        },
+      }
+    );
+  }, [debouncedReadyState]);
+
   useWebSocket(
     // @todo Move the url elsewhere???
     // @todo Change server routes - don't use setup, but use auto-routing
@@ -172,7 +249,20 @@ const FormulaSetupPage: React.FC = () => {
             <Stack spacing={2}>
               {game.gamesUsers.map((gameUser) => (
                 <Paper key={gameUser.userId} elevation={4} sx={{ padding: 2 }}>
-                  <Typography variant="h6">{`${gameUser.user.name}'s cars`}</Typography>
+                  <FlexBox>
+                    <Typography variant="h6">{`${gameUser.user.name}'s cars`}</Typography>
+                    {/* @todo Move the readyState magic value in enum */}
+                    <UserReadyButton
+                      isCurrentUser={gameUser.userId == userData?.user.id}
+                      isEnabled={isUserCarsWearPointsAddUp}
+                      currentState={
+                        (gameUser.userId == userData?.user.id &&
+                          updateReadyState) ??
+                        gameUser.readyState == "R"
+                      }
+                      onClick={(isReady) => setUpdateReadyState(isReady)}
+                    />
+                  </FlexBox>
                   <Stack spacing={2} padding={2}>
                     {game.foCars
                       .filter((car) => car.userId == gameUser.userId)
@@ -297,6 +387,17 @@ const FormulaSetupPage: React.FC = () => {
                     }
                   />
                 </FlexBox>
+                {/* @todo Move constant to an enum somewhere */}
+                <Button
+                  variant="contained"
+                  disabled={
+                    !game.gamesUsers.every(
+                      (gameUser) => gameUser.readyState == "R"
+                    )
+                  }
+                >
+                  Start
+                </Button>
               </Stack>
             </Paper>
           </Grid>
