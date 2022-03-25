@@ -33,7 +33,9 @@ interface car extends foCarsAttributes {
   foDamages: foDamages[];
 }
 
-interface formulaGame extends gamesAttributes, foGamesAttributes {
+interface formulaGame extends gamesAttributes, foGamesAttributes {}
+
+interface fullFormulaGame extends formulaGame {
   foCars: car[];
   gamesUsers: (gamesUsersAttributes & { user: usersAttributes })[];
 }
@@ -285,22 +287,20 @@ const UserCars = (props: {
   );
 };
 
-const FormulaSetupPage: React.FC = () => {
+const GameSetup = (props: {
+  game: formulaGame;
+  gameUsers: gamesUsersAttributes[];
+}) => {
   const [userData] = useContext(loginContext);
-  const { gameId } = useParams();
-  const [game, setGame] = useState<formulaGame>(null);
-  const [gameUpdates, setGameUpdates] = useState<
+  const [debouncedGame, setGame, game] = useDebouncedState<
     gamesAttributes & foGamesAttributes
-  >(null);
-
-  const debouncedUpdate = useDebounce(gameUpdates, 1000);
+  >(props.game);
 
   useEffect(() => {
-    // @todo Consider doing diff between game and debouncedUpdate - less likely extra request calls
-    if (debouncedUpdate != null) {
+    if (debouncedGame != props.game) {
       axios.post(
-        `/${commonConfig.apiBaseUrl}formula/${gameId}/setup`,
-        debouncedUpdate,
+        `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup`,
+        debouncedGame,
         {
           headers: {
             Authorization: userData.jwt,
@@ -309,14 +309,107 @@ const FormulaSetupPage: React.FC = () => {
         }
       );
     }
-  }, [debouncedUpdate]);
+  }, [debouncedGame]);
+
+  return (
+    <Paper elevation={4} sx={{ padding: 2 }}>
+      <Stack spacing={2}>
+        <Select defaultValue={props.game.foTrackId}>
+          <MenuItem value={1}>Monaco</MenuItem>
+        </Select>
+        <FlexBox>
+          <Typography display="inline" sx={{ flexGrow: 1 }}>
+            Players
+          </Typography>
+          <ValidatedNumberTextField
+            placeholder="min"
+            value={game.minPlayers ?? ""}
+            validate={(value) =>
+              PositiveNumberValidator(value) &&
+              parseInt(value) < game.maxPlayers
+            }
+            onChange={(value) =>
+              setGame((game) => {
+                return { ...game, minPlayers: parseInt(value) };
+              })
+            }
+          />
+          <Typography display="inline">-</Typography>
+          <ValidatedNumberTextField
+            placeholder="max"
+            value={game.maxPlayers ?? ""}
+            validate={(value) =>
+              PositiveNumberValidator(value) &&
+              parseInt(value) > (game.minPlayers ?? 1)
+            }
+            onChange={(value) =>
+              setGame((game) => {
+                return { ...game, maxPlayers: parseInt(value) };
+              })
+            }
+          />
+        </FlexBox>
+        <FlexBox>
+          <Typography display="inline">Laps</Typography>
+          <ValidatedNumberTextField
+            value={game.laps}
+            validate={PositiveNumberValidator}
+            onChange={(value) =>
+              setGame((game) => {
+                return { ...game, laps: parseInt(value) };
+              })
+            }
+          />
+        </FlexBox>
+        <FlexBox>
+          <Typography display="inline">Wear Points</Typography>
+          <ValidatedNumberTextField
+            value={game.wearPoints}
+            validate={PositiveNumberValidator}
+            onChange={(value) =>
+              setGame((game) => {
+                return { ...game, wearPoints: parseInt(value) };
+              })
+            }
+          />
+        </FlexBox>
+        <FlexBox>
+          <Typography display="inline">Cars per player</Typography>
+          <ValidatedNumberTextField
+            value={game.carsPerPlayer}
+            validate={PositiveNumberValidator}
+            onChange={(value) =>
+              setGame((game) => {
+                return { ...game, carsPerPlayer: parseInt(value) };
+              })
+            }
+          />
+        </FlexBox>
+        {/* @todo Move constant to an enum somewhere */}
+        <Button
+          variant="contained"
+          disabled={
+            !props.gameUsers.every((gameUser) => gameUser.readyState == "R")
+          }
+        >
+          Start
+        </Button>
+      </Stack>
+    </Paper>
+  );
+};
+
+const FormulaSetupPage: React.FC = () => {
+  const [userData] = useContext(loginContext);
+  const { gameId } = useParams();
+  const [game, setGame] = useState<fullFormulaGame>(null);
 
   useWebSocket(
     // @todo Move the url elsewhere???
     // @todo Change server routes - don't use setup, but use auto-routing
     // on server and the client decides how to display the data
     `ws://localhost:5000/${commonConfig.apiBaseUrl}formula/${gameId}/setup`,
-    (msg: formulaGame) => setGame(msg),
+    (msg: fullFormulaGame) => setGame(msg),
     {
       token: userData.jwt,
     }
@@ -349,94 +442,7 @@ const FormulaSetupPage: React.FC = () => {
           </Grid>
           {/** Game setup panel */}
           <Grid item xs={12} md={4} lg={3} padding={2}>
-            <Paper elevation={4} sx={{ padding: 2 }}>
-              <Stack spacing={2}>
-                <Select defaultValue={game.foTrackId}>
-                  <MenuItem value={1}>Monaco</MenuItem>
-                </Select>
-                <FlexBox>
-                  <Typography display="inline" sx={{ flexGrow: 1 }}>
-                    Players
-                  </Typography>
-                  <ValidatedNumberTextField
-                    placeholder="min"
-                    value={gameUpdates?.minPlayers ?? game.minPlayers ?? ""}
-                    validate={(value) =>
-                      PositiveNumberValidator(value) &&
-                      parseInt(value) <
-                        (gameUpdates?.maxPlayers ?? game.maxPlayers)
-                    }
-                    onChange={(value) =>
-                      setGameUpdates((game) => {
-                        return { ...game, minPlayers: parseInt(value) };
-                      })
-                    }
-                  />
-                  <Typography display="inline">-</Typography>
-                  <ValidatedNumberTextField
-                    placeholder="max"
-                    value={gameUpdates?.maxPlayers ?? game.maxPlayers ?? ""}
-                    validate={(value) =>
-                      PositiveNumberValidator(value) &&
-                      parseInt(value) >
-                        (gameUpdates?.minPlayers ?? game.minPlayers ?? 1)
-                    }
-                    onChange={(value) =>
-                      setGameUpdates((game) => {
-                        return { ...game, maxPlayers: parseInt(value) };
-                      })
-                    }
-                  />
-                </FlexBox>
-                <FlexBox>
-                  <Typography display="inline">Laps</Typography>
-                  <ValidatedNumberTextField
-                    value={gameUpdates?.laps ?? game.laps}
-                    validate={PositiveNumberValidator}
-                    onChange={(value) =>
-                      setGameUpdates((game) => {
-                        return { ...game, laps: parseInt(value) };
-                      })
-                    }
-                  />
-                </FlexBox>
-                <FlexBox>
-                  <Typography display="inline">Wear Points</Typography>
-                  <ValidatedNumberTextField
-                    value={gameUpdates?.wearPoints ?? game.wearPoints}
-                    validate={PositiveNumberValidator}
-                    onChange={(value) =>
-                      setGameUpdates((game) => {
-                        return { ...game, wearPoints: parseInt(value) };
-                      })
-                    }
-                  />
-                </FlexBox>
-                <FlexBox>
-                  <Typography display="inline">Cars per player</Typography>
-                  <ValidatedNumberTextField
-                    value={gameUpdates?.carsPerPlayer ?? game.carsPerPlayer}
-                    validate={PositiveNumberValidator}
-                    onChange={(value) =>
-                      setGameUpdates((game) => {
-                        return { ...game, carsPerPlayer: parseInt(value) };
-                      })
-                    }
-                  />
-                </FlexBox>
-                {/* @todo Move constant to an enum somewhere */}
-                <Button
-                  variant="contained"
-                  disabled={
-                    !game.gamesUsers.every(
-                      (gameUser) => gameUser.readyState == "R"
-                    )
-                  }
-                >
-                  Start
-                </Button>
-              </Stack>
-            </Paper>
+            <GameSetup game={game} gameUsers={game.gamesUsers} />
           </Grid>
         </Grid>
       </Grid>
