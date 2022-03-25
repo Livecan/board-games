@@ -161,6 +161,11 @@ const UserCars = (props: {
     });
   };
 
+  // Whenever the user changes car damages new diff is calculated. This is
+  // triggered by the debounced value of cars and will serve as a trigger for
+  // making the server request for changing cars
+  // If in future expected changes of cars via changed props, need to make a
+  // useEffect(do setCars(props.cars), [props.cars])
   const diffCars = useMemo(() => {
     const diff: car[] = [];
     for (const debouncedCar of debouncedCars) {
@@ -198,12 +203,14 @@ const UserCars = (props: {
           },
         }
       );
-      // @todo Consider removing update values that are current, to potentially save few server requests and writes?
     }
   }, [diffCars]);
 
+  // Ready state change needs to be triggered by a props.readyState. This is in
+  // case when e.g. game setup changes and all users' ready states were
+  // automatically reset.
   useEffect(() => {
-    setReadyState(props.readyState);
+    setReadyState(props.readyState && readyState);
   }, [props.readyState]);
 
   useEffect(() => {
