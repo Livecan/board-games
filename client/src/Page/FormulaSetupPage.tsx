@@ -27,9 +27,14 @@ import { gamesUsersAttributes } from "../../../common/src/models/generated/games
 import { foGamesAttributes } from "../../../common/src/models/generated/foGames";
 import { foDamages } from "../../../common/src/models/generated/foDamages";
 import { usersAttributes } from "../../../common/src/models/generated/users";
+import useDebouncedState from "../Hook/UseDebouncedState";
 
-interface fullGame extends gamesAttributes, foGamesAttributes {
-  foCars: (foCarsAttributes & { foDamages: foDamages[] })[];
+interface car extends foCarsAttributes {
+  foDamages: foDamages[];
+}
+
+interface formulaGame extends gamesAttributes, foGamesAttributes {
+  foCars: car[];
   gamesUsers: (gamesUsersAttributes & { user: usersAttributes })[];
 }
 
@@ -111,80 +116,78 @@ const UserReadyButton = ({
     <CancelOutlinedIcon color="error" fontSize="large" />
   );
 
-const FormulaSetupPage: React.FC = () => {
+const UserCars = (props: {
+  userId: number;
+  name: string;
+  readyState: boolean;
+  cars: car[];
+  game: gamesAttributes & foGamesAttributes;
+}) => {
   const [userData] = useContext(loginContext);
-  const { gameId } = useParams();
-  const [game, setGame] = useState<fullGame>(null);
-  const [gameUpdates, setGameUpdates] = useState<
-    gamesAttributes & foGamesAttributes
-  >(null);
-  const [carUpdates, setCarUpdates] = useState<
-    { carId: number; foDamages: { type: number; wearPoints: number }[] }[]
-  >([]);
-  const [updateReadyState, setUpdateReadyState] = useState<boolean>(null);
+  const [debouncedCars, setCars, cars] = useDebouncedState<car[]>(
+    props.cars,
+    1000
+  );
+  const [debouncedReadyState, setReadyState, readyState] = useDebouncedState(
+    props.readyState,
+    1000
+  );
 
   const isUserCarsWearPointsAddUp = useMemo(() => {
-    return (
-      game != null &&
-      game.foCars
-        .filter((car) => car.userId == userData?.user.id)
-        .slice(0, game.carsPerPlayer)
-        .every(
-          (car) =>
-            car.foDamages.reduce(
-              (carry, current) => carry + current.wearPoints,
-              0
-            ) == game.wearPoints
-        )
-    );
-  }, [game, carUpdates]);
+    return props.cars
+      .slice(0, props.game.carsPerPlayer)
+      .every(
+        (car) =>
+          car.foDamages.reduce(
+            (carry, current) => carry + current.wearPoints,
+            0
+          ) == props.game.wearPoints
+      );
+  }, [props.cars, cars]);
 
   const updateCarDamage = (
     carId: number,
     damageType: number,
     wearPoints: number
   ) => {
-    setCarUpdates((carUpdates) => {
-      let updateValue = [...carUpdates];
-      let currentCar = updateValue.find((car) => car.carId == carId);
-      if (currentCar == null) {
-        currentCar = { carId: carId, foDamages: [] };
-        updateValue = [...updateValue, currentCar];
-      }
-      let currentDamage = currentCar.foDamages?.find(
-        (damage) => damage.type == damageType
-      );
-      if (currentDamage == null) {
-        currentDamage = { type: damageType, wearPoints: 0 };
-        currentCar.foDamages = [...currentCar.foDamages, currentDamage];
-      }
-      currentDamage.wearPoints = wearPoints;
+    setCars((cars) => {
+      let updatedCars = [...cars];
+      updatedCars
+        .find((car) => car.id == carId)
+        .foDamages.find((damage) => damage.type == damageType).wearPoints =
+        wearPoints;
 
-      return updateValue;
+      return updatedCars;
     });
   };
 
-  const debouncedUpdate = useDebounce(gameUpdates, 1000);
-  const debouncedCarUpdate = useDebounce(carUpdates, 1000);
-  const debouncedReadyState = useDebounce(updateReadyState, 1000);
-
-  useEffect(() => {
-    axios.post(
-      `/${commonConfig.apiBaseUrl}formula/${gameId}/setup`,
-      debouncedUpdate,
-      {
-        headers: {
-          Authorization: userData.jwt,
-          accept: "application/json",
-        },
+  const diffCars = useMemo(() => {
+    const diff: car[] = [];
+    for (const debouncedCar of debouncedCars) {
+      for (const debouncedDamage of debouncedCar.foDamages) {
+        const originalWearPoints = props.cars
+          .find((car) => car.id == debouncedCar.id)
+          .foDamages.find(
+            (damage) => damage.type == debouncedDamage.type
+          ).wearPoints;
+        if (debouncedDamage.wearPoints != originalWearPoints) {
+          let diffCar = diff.find((car) => car.id == debouncedCar.id);
+          if (diffCar == null) {
+            diffCar = { ...debouncedCar };
+            diffCar.foDamages = [];
+            diff.push(diffCar);
+          }
+          diffCar.foDamages.push(debouncedDamage);
+        }
       }
-    );
-  }, [debouncedUpdate]);
+    }
+    return diff;
+  }, [debouncedCars]);
 
   useEffect(() => {
-    for (const carUpdate of debouncedCarUpdate) {
+    for (const carUpdate of diffCars) {
       axios.post(
-        `/${commonConfig.apiBaseUrl}formula/${gameId}/setup/car/${carUpdate.carId}`,
+        `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup/car/${carUpdate.id}`,
         carUpdate.foDamages.map((damage) => {
           return { type: damage.type, wearPoints: damage.wearPoints };
         }),
@@ -197,35 +200,120 @@ const FormulaSetupPage: React.FC = () => {
       );
       // @todo Consider removing update values that are current, to potentially save few server requests and writes?
     }
-  }, [debouncedCarUpdate]);
+  }, [diffCars]);
 
   useEffect(() => {
-    axios.post(
-      `/${commonConfig.apiBaseUrl}formula/${gameId}/setup/ready`,
-      {
-        isReady: debouncedReadyState,
-      },
-      {
-        headers: {
-          Authorization: userData.jwt,
-          accept: "application/json",
+    setReadyState(props.readyState);
+  }, [props.readyState]);
+
+  useEffect(() => {
+    if (
+      debouncedReadyState != null &&
+      debouncedReadyState != props.readyState
+    ) {
+      axios.post(
+        `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup/ready`,
+        {
+          isReady: debouncedReadyState,
         },
-      }
-    );
+        {
+          headers: {
+            Authorization: userData.jwt,
+            accept: "application/json",
+          },
+        }
+      );
+    }
   }, [debouncedReadyState]);
+
+  return (
+    <Paper key={props.userId} elevation={4} sx={{ padding: 2 }}>
+      <FlexBox>
+        <Typography variant="h6">
+          {props.userId === userData?.user?.id
+            ? "Your cars"
+            : `${props.name}'s cars`}
+        </Typography>
+        {/* @todo Move the readyState magic value in enum */}
+        <UserReadyButton
+          isCurrentUser={props.userId == userData?.user.id}
+          isEnabled={isUserCarsWearPointsAddUp}
+          currentState={readyState}
+          onClick={(isReady) =>
+            props.userId == userData?.user?.id && setReadyState(isReady)
+          }
+        />
+      </FlexBox>
+      <Stack spacing={2} padding={2}>
+        {cars.slice(0, props.game.carsPerPlayer).map((car) => (
+          <Paper
+            key={car.id}
+            elevation={8}
+            sx={{ padding: 2, width: "fit-content" }}
+          >
+            <FlexBox
+              sx={{
+                justifyContent: "flexStart",
+                flexWrap: "wrap",
+              }}
+            >
+              {car.foDamages.map((damage) => (
+                // @todo Validate on backend
+                <ValidatedNumberTextField
+                  key={damage.type}
+                  value={damage.wearPoints}
+                  validate={PositiveNumberValidator}
+                  onChange={(value) =>
+                    props.userId == userData?.user?.id &&
+                    updateCarDamage(car.id, damage.type, parseInt(value))
+                  }
+                  disabled={props.userId != userData.user.id}
+                />
+              ))}
+            </FlexBox>
+          </Paper>
+        ))}
+      </Stack>
+    </Paper>
+  );
+};
+
+const FormulaSetupPage: React.FC = () => {
+  const [userData] = useContext(loginContext);
+  const { gameId } = useParams();
+  const [game, setGame] = useState<formulaGame>(null);
+  const [gameUpdates, setGameUpdates] = useState<
+    gamesAttributes & foGamesAttributes
+  >(null);
+
+  const debouncedUpdate = useDebounce(gameUpdates, 1000);
+
+  useEffect(() => {
+    // @todo Consider doing diff between game and debouncedUpdate - less likely extra request calls
+    if (debouncedUpdate != null) {
+      axios.post(
+        `/${commonConfig.apiBaseUrl}formula/${gameId}/setup`,
+        debouncedUpdate,
+        {
+          headers: {
+            Authorization: userData.jwt,
+            accept: "application/json",
+          },
+        }
+      );
+    }
+  }, [debouncedUpdate]);
 
   useWebSocket(
     // @todo Move the url elsewhere???
     // @todo Change server routes - don't use setup, but use auto-routing
     // on server and the client decides how to display the data
     `ws://localhost:5000/${commonConfig.apiBaseUrl}formula/${gameId}/setup`,
-    (msg: fullGame) => setGame(msg),
+    (msg: formulaGame) => setGame(msg),
     {
       token: userData.jwt,
     }
   );
-
-  const isCreator = userData?.user.id == game?.creatorId;
 
   return (
     game != null && (
@@ -238,65 +326,17 @@ const FormulaSetupPage: React.FC = () => {
           <Grid item xs={12} md={8} lg={9} padding={2}>
             <Stack spacing={2}>
               {game.gamesUsers.map((gameUser) => (
-                <Paper key={gameUser.userId} elevation={4} sx={{ padding: 2 }}>
-                  <FlexBox>
-                    <Typography variant="h6">{`${gameUser.user.name}'s cars`}</Typography>
-                    {/* @todo Move the readyState magic value in enum */}
-                    <UserReadyButton
-                      isCurrentUser={gameUser.userId == userData?.user.id}
-                      isEnabled={isUserCarsWearPointsAddUp}
-                      currentState={
-                        (gameUser.userId == userData?.user.id &&
-                          updateReadyState) ??
-                        gameUser.readyState == "R"
-                      }
-                      onClick={(isReady) => setUpdateReadyState(isReady)}
-                    />
-                  </FlexBox>
-                  <Stack spacing={2} padding={2}>
-                    {game.foCars
-                      .filter((car) => car.userId == gameUser.userId)
-                      .slice(0, game.carsPerPlayer)
-                      .map((car) => (
-                        <Paper
-                          key={car.id}
-                          elevation={8}
-                          sx={{ padding: 2, width: "fit-content" }}
-                        >
-                          <FlexBox
-                            sx={{
-                              justifyContent: "flexStart",
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            {car.foDamages.map((damage) => (
-                              /* @todo Use validation rules to avoid invalid numbers, validation test on backend */
-                              /* @todo Only allow the user to change his/her own cars' damages */
-                              <ValidatedNumberTextField
-                                key={damage.type}
-                                value={
-                                  carUpdates
-                                    ?.find((_car) => _car.carId == car.id)
-                                    ?.foDamages?.find(
-                                      (_damage) => _damage.type == damage.type
-                                    )?.wearPoints ?? damage.wearPoints
-                                }
-                                validate={PositiveNumberValidator}
-                                onChange={(value) =>
-                                  updateCarDamage(
-                                    car.id,
-                                    damage.type,
-                                    parseInt(value)
-                                  )
-                                }
-                                disabled={gameUser.userId != userData.user.id}
-                              />
-                            ))}
-                          </FlexBox>
-                        </Paper>
-                      ))}
-                  </Stack>
-                </Paper>
+                <UserCars
+                  key={gameUser.userId}
+                  userId={gameUser.userId}
+                  name={gameUser.user.name}
+                  // @todo Move magic constant into enums
+                  readyState={gameUser.readyState == "R"}
+                  cars={game.foCars.filter(
+                    (car) => car.userId == gameUser.userId
+                  )}
+                  game={game}
+                />
               ))}
             </Stack>
           </Grid>
