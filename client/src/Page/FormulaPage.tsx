@@ -11,6 +11,7 @@ import useWebSocket from "../Hook/UseWebSocketHook";
 import commonConfig from "../../../common/src/config/config";
 import FormulaSetup from "../Component/FormulaSetup";
 import FormulaGamePlay from "../Component/FormulaGamePlay";
+import { gamesStateIdEnum as gameStateIdE } from "../../../common/src/models/enums/game";
 
 interface car extends foCarsAttributes {
   foDamages: foDamagesAttributes[];
@@ -42,10 +43,11 @@ const FormulaPage = () => {
   return (
     game != null &&
     {
-      // @todo Constant for gameStateId move to constants
-      1: <FormulaSetup gameId={gameId} game={game} />,
-      2: <FormulaGamePlay gameId={gameId} game={game} />,
-      3: <div>Game finished; need to close the WebSocket</div>,
+      [gameStateIdE.new]: <FormulaSetup gameId={gameId} game={game} />,
+      [gameStateIdE.started]: <FormulaGamePlay gameId={gameId} game={game} />,
+      [gameStateIdE.finished]: (
+        <div>Game finished; need to close the WebSocket</div>
+      ),
     }[game.gameStateId]
   );
 };

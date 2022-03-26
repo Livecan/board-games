@@ -13,9 +13,7 @@ import {
 import formulaSvc, { gameSetup } from "../service/formulaGame.service";
 import { PreconditionRequiredError, UnauthorizedError } from "../utils/errors";
 import { foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
-
-// @todo Move to constants enum, see the hard-coded value in GameRoutes.tsx
-const newGameStateId = 1;
+import { gamesStateIdEnum as gamesStateIdE } from "../../../common/src/models/enums/game";
 
 const router = express.Router();
 
@@ -31,7 +29,7 @@ const postAddGameRoute = router.route("/add").post([
       .add({ user: req.user, name: req.body.name })
       .then((gameId) =>
         formulaSvc
-          .getGameSetup({ gameId: gameId })
+          .getGame({ gameId: gameId })
           .then((game) => res.send(game))
       )
       .catch((e) => {
@@ -53,7 +51,7 @@ const getGameSubscriptionRoute = router.ws(
           (topic, data) => ws.send(JSON.stringify(data))
         );
         formulaSvc
-          .getGameSetup({ gameId: gameId })
+          .getGame({ gameId: gameId })
           .then((gameSetup) => ws.send(JSON.stringify(gameSetup)));
         ws.on("close", () => req.app.pubSub.unsubscribe(subscriptionToken));
       } catch (e) {
@@ -80,7 +78,7 @@ const canEditGameSetup = async (
   req: Request & { user: usersAttributes }
 ): Promise<Boolean> => {
   const game = await games.findByPk(req.params.gameId);
-  return game.gameStateId == newGameStateId && game.creatorId == req.user.id;
+  return game.gameStateId == gamesStateIdE.new && game.creatorId == req.user.id;
 };
 
 const postGameSetupRoute = router.post("/:gameId/setup", [
@@ -97,7 +95,7 @@ const postGameSetupRoute = router.post("/:gameId/setup", [
     authorize(req, res, canEditGameSetup).then(async () => {
       await formulaSvc.editGameSetup({ gameId: gameId, gameSetup: payload });
       // @todo Add the setup edit functionality first
-      const gameSetup = await formulaSvc.getGameSetup({ gameId: gameId });
+      const gameSetup = await formulaSvc.getGame({ gameId: gameId });
       console.log(gameSetup);
       req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
       res.send(gameSetup);
@@ -109,8 +107,7 @@ const canEditCarSetup = async (
   req: Request & { user: usersAttributes }
 ): Promise<Boolean> => {
   const game = await games.findByPk(req.params.gameId);
-  // @todo Move this hard-coded value in a const
-  if (game.gameStateId != newGameStateId) {
+  if (game.gameStateId != gamesStateIdE.new) {
     return false;
   }
   const foCar = await foCars.findOne({
@@ -136,7 +133,7 @@ const postCarSetupRoute = router.post("/:gameId/setup/car/:foCarId", [
         foCarDamages: payload,
       });
       // @todo Add the setup edit functionality first
-      const gameSetup = await formulaSvc.getGameSetup({ gameId: gameId });
+      const gameSetup = await formulaSvc.getGame({ gameId: gameId });
       console.log(gameSetup);
       req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
       res.send(gameSetup);
@@ -159,7 +156,7 @@ const postSetUserReady = router.post("/:gameId/setup/ready", [
         isReady: payload.isReady,
       })
       .then(async () => {
-        const gameSetup = await formulaSvc.getGameSetup({ gameId: gameId });
+        const gameSetup = await formulaSvc.getGame({ gameId: gameId });
         req.app.pubSub.publish(
           setupSubscription + req.params.gameId,
           gameSetup
@@ -182,7 +179,7 @@ const postStart = router.post("/:gameId/start", [
         .then((game) => {
           res.send(game);
           formulaSvc
-            .getGameSetup({ gameId: gameId })
+            .getGame({ gameId: gameId })
             .then((game) =>
               req.app.pubSub.publish(
                 setupSubscription + req.params.gameId,

@@ -23,6 +23,7 @@ import { gamesUsersAttributes } from "../../../common/src/models/generated/games
 import { foGamesAttributes } from "../../../common/src/models/generated/foGames";
 import useDebouncedState from "../Hook/UseDebouncedState";
 import { car, formulaGame, fullFormulaGame } from "../Page/FormulaPage";
+import { gamesUsersReadyStateEnum as readyStateE } from "../../../common/src/models/enums/game";
 
 const FlexBox = ({ sx = {}, children = {}, ...rest }: BoxProps) => (
   <Box
@@ -235,7 +236,6 @@ const UserCars = (props: {
             ? "Your cars"
             : `${props.name}'s cars`}
         </Typography>
-        {/* @todo Move the readyState magic value in enum */}
         <UserReadyButton
           isCurrentUser={props.userId == userData?.user.id}
           isEnabled={isUserCarsWearPointsAddUp}
@@ -395,13 +395,14 @@ const GameSetup = (props: {
             disabled={!isCreator}
           />
         </FlexBox>
-        {/* @todo Move constant to an enum somewhere */}
         {isCreator && (
           <Button
             variant="contained"
             onClick={startGame}
             disabled={
-              !props.gameUsers.every((gameUser) => gameUser.readyState == "R")
+              !props.gameUsers.every(
+                (gameUser) => gameUser.readyState == readyStateE.ready
+              )
             }
           >
             Start
@@ -433,8 +434,7 @@ const FormulaSetup = ({
                 key={gameUser.userId}
                 userId={gameUser.userId}
                 name={gameUser.user.name}
-                // @todo Move magic constant into enums
-                readyState={gameUser.readyState == "R"}
+                readyState={gameUser.readyState == readyStateE.ready}
                 cars={game.foCars.filter(
                   (car) => car.userId == gameUser.userId
                 )}

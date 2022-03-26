@@ -1,4 +1,6 @@
 import { Op } from "sequelize";
+import { carStateEnum as carStateE } from "../../../common/src/models/enums/formula";
+import { gamesStateIdEnum as gamesStateIdE, gamesUsersReadyStateEnum as readyStateE } from "../../../common/src/models/enums/game";
 import { foCars } from "../../../common/src/models/generated/foCars";
 import { foCurves } from "../../../common/src/models/generated/foCurves";
 import { foDamages, foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
@@ -87,7 +89,7 @@ const addCar = async ({
 
 type gameSetup = foGamesAttributes & gamesAttributes;
 
-const getGameSetup = async ({
+const getGame = async ({
   gameId,
 }: {
   gameId: number;
@@ -130,8 +132,7 @@ const editGameSetup = async ({
   await game.save();
   await game.foGame.save();
 
-  // @todo Move the constant out
-  await gamesUsers.update({ readyState: "N" }, { where: { gameId: gameId } });
+  await gamesUsers.update({ readyState: readyStateE.notReady }, { where: { gameId: gameId } });
 };
 
 const editCarSetup = async ({
@@ -166,14 +167,13 @@ const setUserReady = async ({
 }) => {
   // first figure out if the user
   if (!isReady) {
-    // @todo Move this value "N" into a constants file
     await gamesUsers.update(
-      { readyState: "N" },
+      { readyState: readyStateE.notReady },
       { where: { gameId: gameId, userId: userId } }
     );
     return;
   } else {
-    const game = await getGameSetup({ gameId: gameId });
+    const game = await getGame({ gameId: gameId });
 
     // @ts-ignore
     const userFoCars: [foCars] = game.foCars;
@@ -187,9 +187,8 @@ const setUserReady = async ({
           game.wearPoints
       );
     if (allCarsCorrectWearPoints) {
-      // @todo Move this value "R" into a constants file
       await gamesUsers.update(
-        { readyState: "R" },
+        { readyState: readyStateE.ready },
         { where: { gameId: gameId, userId: userId } }
       );
     }
@@ -210,11 +209,9 @@ const start = async ({ gameId }: gameIdParam) => {
   const gameUsers: gamesUsers[] = game.gamesUsers;
 
   // First, all users must be ready to start
-  // @todo Move hard-coded "R" into constants
-  if (gameUsers.every((gameUser) => gameUser.readyState == "R")) {
+  if (gameUsers.every((gameUser) => gameUser.readyState == readyStateE.ready)) {
     // We set the game to started
-    // @todo Move the hard-coded "2" into constants
-    await games.update({ gameStateId: 2 }, { where: { id: gameId } });
+    await games.update({ gameStateId: gamesStateIdE.started }, { where: { id: gameId } });
 
     // We need to remove each user's excess cars
     //const gameCars = await foCars.findAll({ where: { gameId: gameId } });
@@ -272,8 +269,7 @@ const start = async ({ gameId }: gameIdParam) => {
 
     game.foCars.forEach((car, carIndex) => {
       car.foPositionId = startingPositions[carIndex].id;
-      // @todo Hard-coded value move to contants/enum
-      car.state = "R";
+      car.state = carStateE.racing;
       car.order = carIndex + 1;
     });
 
@@ -333,7 +329,7 @@ const getTrack = async (
 export default {
   add,
   join,
-  getGameSetup,
+  getGame,
   editGameSetup,
   editCarSetup,
   setUserReady,

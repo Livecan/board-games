@@ -9,6 +9,7 @@ import gameSvc from "../service/game.service";
 import formulaSvc from "../service/formulaGame.service";
 import { NotFoundError } from "../utils/errors";
 import { usersAttributes } from "../../../common/src/models/generated/users";
+import { gamesTypeIdEnum as gamesTypeIdE } from "../../../common/src/models/enums/game";
 
 const router = express.Router();
 
@@ -17,8 +18,6 @@ expressWebSocket(router);
 
 const newGamesSubscription = "game/";
 
-// @todo Rewrite this subscriber to a simpler version,
-// as no bi-directional messaging is expected after authentication
 router.ws(
   "/",
   (ws, req: Request & { app: { pubSub: PubSubJS.Base; gameWatch: Date } }) => {
@@ -79,15 +78,14 @@ router.route("/:gameId/join").post([
     const gameId = parseInt(req.params.gameId);
     games.findByPk(gameId).then((game) => {
       switch (game.gameTypeId) {
-        // @todo Move hard coded Game Types into const enum - 2 is for Formula game
-        case 2:
+        case gamesTypeIdE.Formula:
           formulaSvc.join({ gameId: gameId, userId: req.user.id });
           break;
         default:
           gameSvc.join(gameId, req.user.id);
           break;
       }
-      gameSvc.view(gameId).then(game => res.send(game));
+      gameSvc.view(gameId).then((game) => res.send(game));
     });
   },
 ]);

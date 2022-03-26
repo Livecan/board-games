@@ -5,6 +5,7 @@ import { Button, Stack } from "@mui/material";
 import GamesList from "../Component/GamesList";
 import commonConfig from "../../../common/src/config/config";
 import LoginContext from "../Context/LoginContext";
+import { gamesTypeIdEnum as gamesTypeIdE } from "../../../common/src/models/enums/game";
 
 const GamesOverviewPage = () => {
   const navigate = useNavigate();
@@ -12,8 +13,7 @@ const GamesOverviewPage = () => {
 
   const navigateToGame = (gameId: number, gameTypeId: number) => {
     switch (gameTypeId) {
-      // @todo Move hard-coded value into common enums
-      case 2:
+      case gamesTypeIdE.Formula:
         navigate(`/formula/${gameId}`);
         break;
       default:
@@ -24,24 +24,27 @@ const GamesOverviewPage = () => {
   };
 
   const createNewFormulaGame = () => {
-    axios.post(
-      `${commonConfig.apiBaseUrl}formula/add`,
-      {},
-      {
-        headers: {
-          Authorization: userData.jwt,
-          accept: "application/json",
-        },
-      }
-
-    ).then(response => navigateToGame(response.data.id, response.data.gameTypeId));
-  }
+    axios
+      .post(
+        `${commonConfig.apiBaseUrl}formula/add`,
+        {},
+        {
+          headers: {
+            Authorization: userData.jwt,
+            accept: "application/json",
+          },
+        }
+      )
+      .then((response) =>
+        navigateToGame(response.data.id, response.data.gameTypeId)
+      );
+  };
 
   return (
-    <Stack sx={{height: "100%"}}>
-      {userData != null &&
+    <Stack sx={{ height: "100%" }}>
+      {userData != null && (
         <Button onClick={createNewFormulaGame}>New Formula D Game</Button>
-      }
+      )}
       <GamesList
         onJoinGame={({
           gameId,

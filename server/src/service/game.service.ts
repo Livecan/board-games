@@ -1,4 +1,5 @@
 import sequelize from "sequelize";
+import { gamesStateIdEnum as gamesStateIdE } from "../../../common/src/models/enums/game";
 import { games, gamesUsers } from "../../../common/src/models/generated/init-models";
 import { NotFoundError } from "../utils/errors";
 
@@ -28,9 +29,8 @@ const getRecentNewGameModified = async (): Promise<Date> => {
 };
 
 const getNewGames = async () => {
-  // @todo Put gameStateId into a relevant place for constants
   return await games.findAll({
-    where: { gameStateId: 1 },
+    where: { gameStateId: gamesStateIdE.new },
     order: [[sequelize.col("modified"), "DESC"]],
   });
 };
