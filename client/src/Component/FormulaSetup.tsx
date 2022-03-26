@@ -22,7 +22,7 @@ import { gamesAttributes } from "../../../common/src/models/generated/games";
 import { gamesUsersAttributes } from "../../../common/src/models/generated/gamesUsers";
 import { foGamesAttributes } from "../../../common/src/models/generated/foGames";
 import useDebouncedState from "../Hook/UseDebouncedState";
-import { car, formulaGame, fullFormulaGame } from "./FormulaPage";
+import { car, formulaGame, fullFormulaGame } from "../Page/FormulaPage";
 
 const FlexBox = ({ sx = {}, children = {}, ...rest }: BoxProps) => (
   <Box
@@ -280,6 +280,18 @@ const GameSetup = (props: {
     gamesAttributes & foGamesAttributes
   >(props.game);
 
+  const startGame = () => {
+    axios.post(`/${commonConfig.apiBaseUrl}formula/${props.game.id}/start`,
+      {},
+      {
+        headers: {
+          Authorization: userData.jwt,
+          accept: "application/json",
+        },
+      }
+    );
+  }
+
   useEffect(() => {
     if (debouncedGame != props.game) {
       axios.post(
@@ -370,6 +382,7 @@ const GameSetup = (props: {
         {/* @todo Move constant to an enum somewhere */}
         <Button
           variant="contained"
+          onClick={startGame}
           disabled={
             !props.gameUsers.every((gameUser) => gameUser.readyState == "R")
           }

@@ -9,7 +9,7 @@ import { usersAttributes } from "../../../common/src/models/generated/users";
 import loginContext from "../Context/LoginContext";
 import useWebSocket from "../Hook/UseWebSocketHook";
 import commonConfig from "../../../common/src/config/config";
-import FormulaSetup from "./FormulaSetup";
+import FormulaSetup from "../Component/FormulaSetup";
 
 interface car extends foCarsAttributes {
   foDamages: foDamages[];
