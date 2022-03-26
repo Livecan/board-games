@@ -286,8 +286,11 @@ const GameSetup = (props: {
     gamesAttributes & foGamesAttributes
   >(props.game);
 
+  const isCreator = userData?.user?.id == game.creatorId;
+
   const startGame = () => {
-    axios.post(`/${commonConfig.apiBaseUrl}formula/${props.game.id}/start`,
+    axios.post(
+      `/${commonConfig.apiBaseUrl}formula/${props.game.id}/start`,
       {},
       {
         headers: {
@@ -296,7 +299,7 @@ const GameSetup = (props: {
         },
       }
     );
-  }
+  };
 
   useEffect(() => {
     if (debouncedGame != props.game) {
@@ -316,7 +319,7 @@ const GameSetup = (props: {
   return (
     <Paper elevation={4} sx={{ padding: 2 }}>
       <Stack spacing={2}>
-        <Select defaultValue={props.game.foTrackId}>
+        <Select defaultValue={props.game.foTrackId} disabled={!isCreator}>
           <MenuItem value={1}>Monaco</MenuItem>
         </Select>
         <FlexBox>
@@ -325,7 +328,7 @@ const GameSetup = (props: {
           </Typography>
           <ValidatedNumberTextField
             placeholder="min"
-            value={game.minPlayers ?? ""}
+            value={(isCreator ? game : props.game).minPlayers ?? ""}
             validate={(value) =>
               PositiveNumberValidator(value) && value < game.maxPlayers
             }
@@ -334,11 +337,12 @@ const GameSetup = (props: {
                 return { ...game, minPlayers: value };
               })
             }
+            disabled={!isCreator}
           />
           <Typography display="inline">-</Typography>
           <ValidatedNumberTextField
             placeholder="max"
-            value={game.maxPlayers ?? ""}
+            value={(isCreator ? game : props.game).maxPlayers ?? ""}
             validate={(value) =>
               PositiveNumberValidator(value) && value > (game.minPlayers ?? 1)
             }
@@ -347,54 +351,60 @@ const GameSetup = (props: {
                 return { ...game, maxPlayers: value };
               })
             }
+            disabled={!isCreator}
           />
         </FlexBox>
         <FlexBox>
           <Typography display="inline">Laps</Typography>
           <ValidatedNumberTextField
-            value={game.laps}
+            value={(isCreator ? game : props.game).laps}
             validate={PositiveNumberValidator}
             onChange={(value) =>
               setGame((game) => {
                 return { ...game, laps: value };
               })
             }
+            disabled={!isCreator}
           />
         </FlexBox>
         <FlexBox>
           <Typography display="inline">Wear Points</Typography>
           <ValidatedNumberTextField
-            value={game.wearPoints}
+            value={(isCreator ? game : props.game).wearPoints}
             validate={PositiveNumberValidator}
             onChange={(value) =>
               setGame((game) => {
                 return { ...game, wearPoints: value };
               })
             }
+            disabled={!isCreator}
           />
         </FlexBox>
         <FlexBox>
           <Typography display="inline">Cars per player</Typography>
           <ValidatedNumberTextField
-            value={game.carsPerPlayer}
+            value={(isCreator ? game : props.game).carsPerPlayer}
             validate={PositiveNumberValidator}
             onChange={(value) =>
               setGame((game) => {
                 return { ...game, carsPerPlayer: value };
               })
             }
+            disabled={!isCreator}
           />
         </FlexBox>
         {/* @todo Move constant to an enum somewhere */}
-        <Button
-          variant="contained"
-          onClick={startGame}
-          disabled={
-            !props.gameUsers.every((gameUser) => gameUser.readyState == "R")
-          }
-        >
-          Start
-        </Button>
+        {isCreator && (
+          <Button
+            variant="contained"
+            onClick={startGame}
+            disabled={
+              !props.gameUsers.every((gameUser) => gameUser.readyState == "R")
+            }
+          >
+            Start
+          </Button>
+        )}
       </Stack>
     </Paper>
   );
