@@ -1,9 +1,8 @@
-import React, { useEffect } from "react";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import React from "react";
+import { Route, Routes } from "react-router-dom";
 import LoginContext from "./Context/LoginContext";
 import useLogin from "./Hook/UseLoginHook";
 import LoginPage from "./Page/LoginPage";
-import GamesList from "./Component/GamesList";
 import {
   Container,
   createTheme,
@@ -11,6 +10,7 @@ import {
   ThemeProvider,
 } from "@mui/material";
 import FormulaPage from "./Page/FormulaPage";
+import GamesOverviewPage from "./Page/GamesOverviewPage";
 
 const App: React.FC = () => {
   const [userData, login, logout] = useLogin(null);
@@ -21,21 +21,7 @@ const App: React.FC = () => {
     },
   });
 
-  const navigate = useNavigate();
-
-  const navigateToGame = (gameId: number, gameTypeId: number) => {
-    switch (gameTypeId) {
-      // @todo Move hard-coded value into common enums
-      case 2:
-        navigate(`/formula/${gameId}`);
-        break;
-      default:
-        throw new ReferenceError(
-          `GameType with id ${gameTypeId} not recognized`
-        );
-        break;
-    }
-  };
+  //  useEffect(() => {login({jwt: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJMaXZlY2FuIiwiaWF0IjoxNjQ4MDUyMzYyLCJleHAiOjE2NDkyNjE5NjJ9.6KLChLM1J_mHHEg5LHDlWlGcnLbR3GqHAfTsQpYaP0Y", user: {name: "Livecan", id: 1}})}, [])
 
   return (
     <ThemeProvider theme={theme}>
@@ -46,20 +32,7 @@ const App: React.FC = () => {
               <LoginPage />
             ) : (
               <Routes>
-                <Route
-                  index
-                  element={
-                    <GamesList
-                      onJoinGame={({
-                        gameId,
-                        gameTypeId,
-                      }: {
-                        gameId: number;
-                        gameTypeId: number;
-                      }) => navigateToGame(gameId, gameTypeId)}
-                    />
-                  }
-                />
+                <Route index element={<GamesOverviewPage />} />
                 <Route path="/formula/:gameId" element={<FormulaPage />} />
               </Routes>
             )}
