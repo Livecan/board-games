@@ -4,7 +4,7 @@ import LoginContext from "./Context/LoginContext";
 import useLogin from "./Hook/UseLoginHook";
 import LoginPage from "./Page/LoginPage";
 import GamesList from "./Component/GamesList";
-import FormulaSetupPage from "./Page/FormulaSetupPage";
+import FormulaPage from "./Page/FormulaPage";
 
 const App: React.FC = () => {
   const [userData, login, logout] = useLogin(null);
@@ -13,30 +13,40 @@ const App: React.FC = () => {
   const navigateToGame = (gameId: number, gameTypeId: number) => {
     switch (gameTypeId) {
       // @todo Move hard-coded value into common enums
-      case (2):
+      case 2:
         navigate(`/formula/${gameId}`);
         break;
       default:
-        throw new ReferenceError(`GameType with id ${gameTypeId} not recognized`);
+        throw new ReferenceError(
+          `GameType with id ${gameTypeId} not recognized`
+        );
         break;
     }
-  }
+  };
 
   return (
     <LoginContext.Provider value={[userData, login, logout]}>
-      {userData == null ? (
-        <LoginPage />
-      ) : (
-        <Routes>
-          <Route index element={
-            <GamesList onJoinGame={
-              ({gameId, gameTypeId}: {gameId: number, gameTypeId: number}) =>
-                navigateToGame(gameId, gameTypeId)
-            }
-          />} />
-          <Route path="/formula/:gameId" element={<FormulaSetupPage />} />
-        </Routes>
-      )}
+            {userData == null ? (
+              <LoginPage />
+            ) : (
+              <Routes>
+                <Route
+                  index
+                  element={
+                    <GamesList
+                      onJoinGame={({
+                        gameId,
+                        gameTypeId,
+                      }: {
+                        gameId: number;
+                        gameTypeId: number;
+                      }) => navigateToGame(gameId, gameTypeId)}
+                    />
+                  }
+                />
+                <Route path="/formula/:gameId" element={<FormulaPage />} />
+              </Routes>
+            )}
     </LoginContext.Provider>
   );
 };

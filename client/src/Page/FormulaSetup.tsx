@@ -1,7 +1,5 @@
-import React, { useContext, useEffect, useMemo, useState } from "react";
+import React, { useContext, useEffect, useMemo } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
-import { useDebounce } from "usehooks-ts";
 import {
   Box,
   BoxProps,
@@ -18,27 +16,13 @@ import {
 } from "@mui/material";
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined";
 import CancelOutlinedIcon from "@mui/icons-material/CancelOutlined";
-import useWebSocket from "../Hook/UseWebSocketHook";
 import commonConfig from "../../../common/src/config/config";
-import loginContext from "../Context/LoginContext";
+import LoginContext from "../Context/LoginContext";
 import { gamesAttributes } from "../../../common/src/models/generated/games";
-import { foCarsAttributes } from "../../../common/src/models/generated/foCars";
 import { gamesUsersAttributes } from "../../../common/src/models/generated/gamesUsers";
 import { foGamesAttributes } from "../../../common/src/models/generated/foGames";
-import { foDamages } from "../../../common/src/models/generated/foDamages";
-import { usersAttributes } from "../../../common/src/models/generated/users";
 import useDebouncedState from "../Hook/UseDebouncedState";
-
-interface car extends foCarsAttributes {
-  foDamages: foDamages[];
-}
-
-interface formulaGame extends gamesAttributes, foGamesAttributes {}
-
-interface fullFormulaGame extends formulaGame {
-  foCars: car[];
-  gamesUsers: (gamesUsersAttributes & { user: usersAttributes })[];
-}
+import { car, formulaGame, fullFormulaGame } from "./FormulaPage";
 
 const FlexBox = ({ sx = {}, children = {}, ...rest }: BoxProps) => (
   <Box
@@ -55,11 +39,11 @@ const FlexBox = ({ sx = {}, children = {}, ...rest }: BoxProps) => (
   </Box>
 );
 
-const PositiveNumberValidator = (value: string) => parseInt(value) > 0;
+const PositiveNumberValidator = (value: number) => value > 0;
 
 type ValidatedNumberTextFieldProps = TextFieldProps & {
-  onChange?: (value: string) => void;
-  validate?: (value: string) => Boolean;
+  onChange?: (value: number) => void;
+  validate?: (value: number) => Boolean;
 };
 
 const ValidatedNumberTextField = ({
@@ -81,8 +65,8 @@ const ValidatedNumberTextField = ({
     }}
     style={{ width: "4rem", ...style }}
     onChange={(e) =>
-      (validate == null || validate(e.target.value)) &&
-      onChange?.(e.target.value)
+      (validate == null || validate(new Number(e.target.value).valueOf())) &&
+      onChange?.(new Number(e.target.value).valueOf())
     }
     {...rest}
   />
@@ -125,7 +109,7 @@ const UserCars = (props: {
   cars: car[];
   game: gamesAttributes & foGamesAttributes;
 }) => {
-  const [userData] = useContext(loginContext);
+  const [userData] = useContext(LoginContext);
   const [debouncedCars, setCars, cars] = useDebouncedState<car[]>(
     props.cars,
     1000
@@ -274,7 +258,7 @@ const UserCars = (props: {
                   validate={PositiveNumberValidator}
                   onChange={(value) =>
                     props.userId == userData?.user?.id &&
-                    updateCarDamage(car.id, damage.type, parseInt(value))
+                    updateCarDamage(car.id, damage.type, value)
                   }
                   disabled={props.userId != userData.user.id}
                 />
@@ -291,7 +275,7 @@ const GameSetup = (props: {
   game: formulaGame;
   gameUsers: gamesUsersAttributes[];
 }) => {
-  const [userData] = useContext(loginContext);
+  const [userData] = useContext(LoginContext);
   const [debouncedGame, setGame, game] = useDebouncedState<
     gamesAttributes & foGamesAttributes
   >(props.game);
@@ -325,12 +309,11 @@ const GameSetup = (props: {
             placeholder="min"
             value={game.minPlayers ?? ""}
             validate={(value) =>
-              PositiveNumberValidator(value) &&
-              parseInt(value) < game.maxPlayers
+              PositiveNumberValidator(value) && value < game.maxPlayers
             }
             onChange={(value) =>
               setGame((game) => {
-                return { ...game, minPlayers: parseInt(value) };
+                return { ...game, minPlayers: value };
               })
             }
           />
@@ -339,12 +322,11 @@ const GameSetup = (props: {
             placeholder="max"
             value={game.maxPlayers ?? ""}
             validate={(value) =>
-              PositiveNumberValidator(value) &&
-              parseInt(value) > (game.minPlayers ?? 1)
+              PositiveNumberValidator(value) && value > (game.minPlayers ?? 1)
             }
             onChange={(value) =>
               setGame((game) => {
-                return { ...game, maxPlayers: parseInt(value) };
+                return { ...game, maxPlayers: value };
               })
             }
           />
@@ -356,7 +338,7 @@ const GameSetup = (props: {
             validate={PositiveNumberValidator}
             onChange={(value) =>
               setGame((game) => {
-                return { ...game, laps: parseInt(value) };
+                return { ...game, laps: value };
               })
             }
           />
@@ -368,7 +350,7 @@ const GameSetup = (props: {
             validate={PositiveNumberValidator}
             onChange={(value) =>
               setGame((game) => {
-                return { ...game, wearPoints: parseInt(value) };
+                return { ...game, wearPoints: value };
               })
             }
           />
@@ -380,7 +362,7 @@ const GameSetup = (props: {
             validate={PositiveNumberValidator}
             onChange={(value) =>
               setGame((game) => {
-                return { ...game, carsPerPlayer: parseInt(value) };
+                return { ...game, carsPerPlayer: value };
               })
             }
           />
@@ -399,55 +381,43 @@ const GameSetup = (props: {
   );
 };
 
-const FormulaSetupPage: React.FC = () => {
-  const [userData] = useContext(loginContext);
-  const { gameId } = useParams();
-  const [game, setGame] = useState<fullFormulaGame>(null);
-
-  useWebSocket(
-    // @todo Move the url elsewhere???
-    // @todo Change server routes - don't use setup, but use auto-routing
-    // on server and the client decides how to display the data
-    `ws://localhost:5000/${commonConfig.apiBaseUrl}formula/${gameId}/setup`,
-    (msg: fullFormulaGame) => setGame(msg),
-    {
-      token: userData.jwt,
-    }
-  );
-
-  return (
-    game != null && (
-      <Grid container>
-        <Grid item xs={12} padding={2}>
-          <Typography variant="h3">{game.name}</Typography>
+const FormulaSetup = ({
+  gameId,
+  game,
+}: {
+  gameId: number;
+  game: fullFormulaGame;
+}) =>
+  game != null && (
+    <Grid container>
+      <Grid item xs={12} padding={2}>
+        <Typography variant="h3">{game.name}</Typography>
+      </Grid>
+      <Grid container item xs={12}>
+        {/** Car damages panel */}
+        <Grid item xs={12} md={8} lg={9} padding={2}>
+          <Stack spacing={2}>
+            {game.gamesUsers.map((gameUser) => (
+              <UserCars
+                key={gameUser.userId}
+                userId={gameUser.userId}
+                name={gameUser.user.name}
+                // @todo Move magic constant into enums
+                readyState={gameUser.readyState == "R"}
+                cars={game.foCars.filter(
+                  (car) => car.userId == gameUser.userId
+                )}
+                game={game}
+              />
+            ))}
+          </Stack>
         </Grid>
-        <Grid container item xs={12}>
-          {/** Car damages panel */}
-          <Grid item xs={12} md={8} lg={9} padding={2}>
-            <Stack spacing={2}>
-              {game.gamesUsers.map((gameUser) => (
-                <UserCars
-                  key={gameUser.userId}
-                  userId={gameUser.userId}
-                  name={gameUser.user.name}
-                  // @todo Move magic constant into enums
-                  readyState={gameUser.readyState == "R"}
-                  cars={game.foCars.filter(
-                    (car) => car.userId == gameUser.userId
-                  )}
-                  game={game}
-                />
-              ))}
-            </Stack>
-          </Grid>
-          {/** Game setup panel */}
-          <Grid item xs={12} md={4} lg={3} padding={2}>
-            <GameSetup game={game} gameUsers={game.gamesUsers} />
-          </Grid>
+        {/** Game setup panel */}
+        <Grid item xs={12} md={4} lg={3} padding={2}>
+          <GameSetup game={game} gameUsers={game.gamesUsers} />
         </Grid>
       </Grid>
-    )
+    </Grid>
   );
-};
 
-export default FormulaSetupPage;
+export default FormulaSetup;
