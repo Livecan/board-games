@@ -10,6 +10,7 @@ import loginContext from "../Context/LoginContext";
 import useWebSocket from "../Hook/UseWebSocketHook";
 import commonConfig from "../../../common/src/config/config";
 import FormulaSetup from "../Component/FormulaSetup";
+import FormulaGamePlay from "../Component/FormulaGamePlay";
 
 interface car extends foCarsAttributes {
   foDamages: foDamagesAttributes[];
@@ -43,7 +44,7 @@ const FormulaPage = () => {
     {
       // @todo Constant for gameStateId move to constants
       1: <FormulaSetup gameId={gameId} game={game} />,
-      2: <div>Game in progress</div>,
+      2: <FormulaGamePlay gameId={gameId} game={game} />,
       3: <div>Game finished; need to close the WebSocket</div>,
     }[game.gameStateId]
   );
