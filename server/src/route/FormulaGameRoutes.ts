@@ -41,7 +41,7 @@ const postAddGameRoute = router.route("/add").post([
 ]);
 
 const getGameSubscriptionRoute = router.ws(
-  "/:gameId/setup",
+  "/:gameId",
   (ws, req: Request & { app: { pubSub: PubSubJS.Base } }) => {
     const gameId = parseInt(req.params.gameId);
     ws.on("message", async (msg: string) => {

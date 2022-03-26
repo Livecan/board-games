@@ -31,7 +31,7 @@ const FormulaPage = () => {
     // @todo Move the url elsewhere???
     // @todo Change server routes - don't use setup, but use auto-routing
     // on server and the client decides how to display the data
-    `ws://localhost:5000/${commonConfig.apiBaseUrl}formula/${gameId}/setup`,
+    `ws://localhost:5000/${commonConfig.apiBaseUrl}formula/${gameId}`,
     (msg: fullFormulaGame) => setGame(msg),
     {
       token: userData.jwt,
