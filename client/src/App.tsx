@@ -4,10 +4,23 @@ import LoginContext from "./Context/LoginContext";
 import useLogin from "./Hook/UseLoginHook";
 import LoginPage from "./Page/LoginPage";
 import GamesList from "./Component/GamesList";
+import {
+  Container,
+  createTheme,
+  CssBaseline,
+  ThemeProvider,
+} from "@mui/material";
 import FormulaPage from "./Page/FormulaPage";
 
 const App: React.FC = () => {
   const [userData, login, logout] = useLogin(null);
+
+  const theme = createTheme({
+    palette: {
+      mode: "dark",
+    },
+  });
+
   const navigate = useNavigate();
 
   const navigateToGame = (gameId: number, gameTypeId: number) => {
@@ -25,7 +38,10 @@ const App: React.FC = () => {
   };
 
   return (
-    <LoginContext.Provider value={[userData, login, logout]}>
+    <ThemeProvider theme={theme}>
+      <LoginContext.Provider value={[userData, login, logout]}>
+        <CssBaseline>
+          <Container>
             {userData == null ? (
               <LoginPage />
             ) : (
@@ -47,7 +63,10 @@ const App: React.FC = () => {
                 <Route path="/formula/:gameId" element={<FormulaPage />} />
               </Routes>
             )}
-    </LoginContext.Provider>
+          </Container>
+        </CssBaseline>
+      </LoginContext.Provider>
+    </ThemeProvider>
   );
 };
 
