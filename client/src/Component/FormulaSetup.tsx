@@ -237,7 +237,7 @@ const UserCars = (props: {
         <UserReadyButton
           isCurrentUser={props.userId == userData?.user.id}
           isEnabled={isUserCarsWearPointsAddUp}
-          currentState={readyState}
+          currentState={props.readyState || readyState}
           onClick={(isReady) =>
             props.userId == userData?.user?.id && setReadyState(isReady)
           }
