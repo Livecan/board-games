@@ -137,7 +137,13 @@ const UserCars = (props: {
     wearPoints: number
   ) => {
     setCars((cars) => {
-      let updatedCars = [...cars];
+      // @todo Use this for the deep copy insted: structuredClone(cars);
+      // Only released recently - Feb/Mar 2022, so no wide support yet.
+      let updatedCars = cars.map(car => {
+        const updatedCar = {...car};
+        updatedCar.foDamages = car.foDamages.map(damage => { return {...damage} });
+        return updatedCar;
+      });
       updatedCars
         .find((car) => car.id == carId)
         .foDamages.find((damage) => damage.type == damageType).wearPoints =

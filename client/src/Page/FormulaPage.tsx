@@ -1,7 +1,7 @@
 import React, { useContext, useState } from "react";
 import { useParams } from "react-router-dom";
 import { foCarsAttributes } from "../../../common/src/models/generated/foCars";
-import { foDamages } from "../../../common/src/models/generated/foDamages";
+import { foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
 import { foGamesAttributes } from "../../../common/src/models/generated/foGames";
 import { gamesAttributes } from "../../../common/src/models/generated/games";
 import { gamesUsersAttributes } from "../../../common/src/models/generated/gamesUsers";
@@ -12,7 +12,7 @@ import commonConfig from "../../../common/src/config/config";
 import FormulaSetup from "../Component/FormulaSetup";
 
 interface car extends foCarsAttributes {
-  foDamages: foDamages[];
+  foDamages: foDamagesAttributes[];
 }
 
 interface formulaGame extends gamesAttributes, foGamesAttributes {}
