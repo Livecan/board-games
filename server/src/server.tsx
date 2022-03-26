@@ -14,7 +14,7 @@ import { AuthenticationFailedError } from "./utils/errors";
 import { initModels } from "../../common/src/models/generated/init-models";
 import commonConfig from "../../common/src/config/config";
 
-const app = express();
+const app = express() as express.Express & {pubSub: PubSubJS.Base};
 
 app.use(cors());
 
@@ -22,7 +22,6 @@ app.use(cors());
 app.use(express.json());
 
 // Puts Publisher-Subscriber in global app, so that requests in imported routes can share messages
-// @ts-ignore
 app.pubSub = PubSub;
 
 expressWebSocket(app);
