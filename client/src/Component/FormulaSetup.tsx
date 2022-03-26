@@ -139,9 +139,11 @@ const UserCars = (props: {
     setCars((cars) => {
       // @todo Use this for the deep copy insted: structuredClone(cars);
       // Only released recently - Feb/Mar 2022, so no wide support yet.
-      let updatedCars = cars.map(car => {
-        const updatedCar = {...car};
-        updatedCar.foDamages = car.foDamages.map(damage => { return {...damage} });
+      let updatedCars = cars.map((car) => {
+        const updatedCar = { ...car };
+        updatedCar.foDamages = car.foDamages.map((damage) => {
+          return { ...damage };
+        });
         return updatedCar;
       });
       updatedCars
