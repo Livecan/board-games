@@ -26,7 +26,11 @@ const postAddGameRoute = router.route("/add").post([
   (req: Request & { user: users }, res: Response) => {
     formulaSvc
       .add({ user: req.user, name: req.body.name })
-      .then((gameId) => res.redirect(`${req.baseUrl}/${gameId}/setup`))
+      .then((gameId) =>
+        formulaSvc
+          .getGameSetup({ gameId: gameId })
+          .then((game) => res.send(game))
+      )
       .catch((e) => {
         throw e;
       });
