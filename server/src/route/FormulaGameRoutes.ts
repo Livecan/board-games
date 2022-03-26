@@ -2,7 +2,10 @@ import express, { Request, Response } from "express";
 import expressWebSocket from "express-ws";
 import { games } from "../../../common/src/models/generated/games";
 import { foCars } from "../../../common/src/models/generated/foCars";
-import { users, usersAttributes } from "../../../common/src/models/generated/users";
+import {
+  users,
+  usersAttributes,
+} from "../../../common/src/models/generated/users";
 import {
   authenticate,
   authenticateToken,
@@ -49,8 +52,9 @@ const getGameSubscriptionRoute = router.ws(
           setupSubscription + gameId,
           (topic, data) => ws.send(JSON.stringify(data))
         );
-        formulaSvc.getGameSetup({gameId: gameId})
-          .then(gameSetup => ws.send(JSON.stringify(gameSetup)));
+        formulaSvc
+          .getGameSetup({ gameId: gameId })
+          .then((gameSetup) => ws.send(JSON.stringify(gameSetup)));
         ws.on("close", () => req.app.pubSub.unsubscribe(subscriptionToken));
       } catch (e) {
         ws.close(4000, "Authentication Failed");
