@@ -171,7 +171,17 @@ const postStart = router.post("/:gameId/start", [
     authorize(req, res, canEditGameSetup).then(async () => {
       formulaSvc
         .start({ gameId: gameId })
-        .then((game) => res.send(game))
+        .then((game) => {
+          res.send(game);
+          formulaSvc
+            .getGameSetup({ gameId: gameId })
+            .then((game) =>
+              req.app.pubSub.publish(
+                setupSubscription + req.params.gameId,
+                game
+              )
+            );
+        })
         .catch((e) => {
           if (e instanceof PreconditionRequiredError) {
             res.sendStatus(PreconditionRequiredError.code).send(e.message);
