@@ -120,17 +120,19 @@ const UserCars = (props: {
     1000
   );
 
-  const isUserCarsWearPointsAddUp = useMemo(() => {
-    return props.cars
-      .slice(0, props.game.carsPerPlayer)
-      .every(
-        (car) =>
-          car.foDamages.reduce(
-            (carry, current) => carry + current.wearPoints,
-            0
-          ) == props.game.wearPoints
-      );
-  }, [props.cars, cars]);
+  const isUserCarsWearPointsAddUp = useMemo(
+    () =>
+      props.cars
+        .slice(0, props.game.carsPerPlayer)
+        .every(
+          (car) =>
+            car.foDamages.reduce(
+              (carry, current) => carry + current.wearPoints,
+              0
+            ) == props.game.wearPoints
+        ),
+    [props.cars, cars]
+  );
 
   const updateCarDamage = (
     carId: number,
@@ -140,13 +142,10 @@ const UserCars = (props: {
     setCars((cars) => {
       // @todo Use this for the deep copy insted: structuredClone(cars);
       // Only released recently - Feb/Mar 2022, so no wide support yet.
-      let updatedCars = cars.map((car) => {
-        const updatedCar = { ...car };
-        updatedCar.foDamages = car.foDamages.map((damage) => {
-          return { ...damage };
-        });
-        return updatedCar;
-      });
+      let updatedCars = cars.map((car) => ({
+        ...car,
+        foDamages: car.foDamages.map((damage) => ({ ...damage })),
+      }));
       updatedCars
         .find((car) => car.id == carId)
         .foDamages.find((damage) => damage.type == damageType).wearPoints =
@@ -188,9 +187,10 @@ const UserCars = (props: {
     for (const carUpdate of diffCars) {
       axios.post(
         `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup/car/${carUpdate.id}`,
-        carUpdate.foDamages.map((damage) => {
-          return { type: damage.type, wearPoints: damage.wearPoints };
-        }),
+        carUpdate.foDamages.map((damage) => ({
+          type: damage.type,
+          wearPoints: damage.wearPoints,
+        })),
         {
           headers: {
             Authorization: userData.jwt,
@@ -335,9 +335,7 @@ const GameSetup = (props: {
               PositiveNumberValidator(value) && value < game.maxPlayers
             }
             onChange={(value) =>
-              setGame((game) => {
-                return { ...game, minPlayers: value };
-              })
+              setGame((game) => ({ ...game, minPlayers: value }))
             }
             disabled={!isCreator}
           />
@@ -349,9 +347,7 @@ const GameSetup = (props: {
               PositiveNumberValidator(value) && value > (game.minPlayers ?? 1)
             }
             onChange={(value) =>
-              setGame((game) => {
-                return { ...game, maxPlayers: value };
-              })
+              setGame((game) => ({ ...game, maxPlayers: value }))
             }
             disabled={!isCreator}
           />
@@ -361,11 +357,7 @@ const GameSetup = (props: {
           <ValidatedNumberTextField
             value={(isCreator ? game : props.game).laps}
             validate={PositiveNumberValidator}
-            onChange={(value) =>
-              setGame((game) => {
-                return { ...game, laps: value };
-              })
-            }
+            onChange={(value) => setGame((game) => ({ ...game, laps: value }))}
             disabled={!isCreator}
           />
         </FlexBox>
@@ -375,9 +367,7 @@ const GameSetup = (props: {
             value={(isCreator ? game : props.game).wearPoints}
             validate={PositiveNumberValidator}
             onChange={(value) =>
-              setGame((game) => {
-                return { ...game, wearPoints: value };
-              })
+              setGame((game) => ({ ...game, wearPoints: value }))
             }
             disabled={!isCreator}
           />
@@ -388,9 +378,7 @@ const GameSetup = (props: {
             value={(isCreator ? game : props.game).carsPerPlayer}
             validate={PositiveNumberValidator}
             onChange={(value) =>
-              setGame((game) => {
-                return { ...game, carsPerPlayer: value };
-              })
+              setGame((game) => ({ ...game, carsPerPlayer: value }))
             }
             disabled={!isCreator}
           />
