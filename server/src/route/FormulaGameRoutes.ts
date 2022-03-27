@@ -20,7 +20,7 @@ const router = express.Router();
 // @ts-ignore
 expressWebSocket(router);
 
-const setupSubscription = "formula/setup/";
+const formulaSubscription = "formula/";
 
 const postAddGameRoute = router.route("/add").post([
   (req, res, next) => authenticate(req, res, next),
@@ -28,9 +28,7 @@ const postAddGameRoute = router.route("/add").post([
     formulaSvc
       .add({ user: req.user, name: req.body.name })
       .then((gameId) =>
-        formulaSvc
-          .getGame({ gameId: gameId })
-          .then((game) => res.send(game))
+        formulaSvc.getGame({ gameId: gameId }).then((game) => res.send(game))
       )
       .catch((e) => {
         throw e;
@@ -47,7 +45,7 @@ const getGameSubscriptionRoute = router.ws(
       try {
         await authenticateToken(data.token, req);
         const subscriptionToken = req.app.pubSub.subscribe(
-          setupSubscription + gameId,
+          formulaSubscription + gameId,
           (topic, data) => ws.send(JSON.stringify(data))
         );
         formulaSvc
@@ -97,7 +95,10 @@ const postGameSetupRoute = router.post("/:gameId/setup", [
       // @todo Add the setup edit functionality first
       const gameSetup = await formulaSvc.getGame({ gameId: gameId });
       console.log(gameSetup);
-      req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
+      req.app.pubSub.publish(
+        formulaSubscription + req.params.gameId,
+        gameSetup
+      );
       res.send(gameSetup);
     });
   },
@@ -135,7 +136,10 @@ const postCarSetupRoute = router.post("/:gameId/setup/car/:foCarId", [
       // @todo Add the setup edit functionality first
       const gameSetup = await formulaSvc.getGame({ gameId: gameId });
       console.log(gameSetup);
-      req.app.pubSub.publish(setupSubscription + req.params.gameId, gameSetup);
+      req.app.pubSub.publish(
+        formulaSubscription + req.params.gameId,
+        gameSetup
+      );
       res.send(gameSetup);
     });
   },
@@ -158,7 +162,7 @@ const postSetUserReady = router.post("/:gameId/setup/ready", [
       .then(async () => {
         const gameSetup = await formulaSvc.getGame({ gameId: gameId });
         req.app.pubSub.publish(
-          setupSubscription + req.params.gameId,
+          formulaSubscription + req.params.gameId,
           gameSetup
         );
         res.send(gameSetup);
@@ -182,7 +186,7 @@ const postStart = router.post("/:gameId/start", [
             .getGame({ gameId: gameId })
             .then((game) =>
               req.app.pubSub.publish(
-                setupSubscription + req.params.gameId,
+                formulaSubscription + req.params.gameId,
                 game
               )
             );
