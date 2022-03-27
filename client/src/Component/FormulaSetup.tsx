@@ -131,7 +131,7 @@ const UserCars = (props: {
               0
             ) == props.game.wearPoints
         ),
-    [props.cars, cars]
+    [props.cars, props.game.carsPerPlayer]
   );
 
   const updateCarDamage = (
