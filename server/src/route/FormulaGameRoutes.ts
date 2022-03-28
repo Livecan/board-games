@@ -94,7 +94,7 @@ const postGameSetupRoute = router.post("/:gameId/setup", [
       await formulaSvc.editGameSetup({ gameId: gameId, gameSetup: payload });
       // @todo Add the setup edit functionality first
       const gameSetup = await formulaSvc.getGame({ gameId: gameId });
-      console.log(gameSetup);
+      // console.log(gameSetup);
       req.app.pubSub.publish(
         formulaSubscription + req.params.gameId,
         gameSetup
@@ -135,7 +135,7 @@ const postCarSetupRoute = router.post("/:gameId/setup/car/:foCarId", [
       });
       // @todo Add the setup edit functionality first
       const gameSetup = await formulaSvc.getGame({ gameId: gameId });
-      console.log(gameSetup);
+      // console.log(gameSetup);
       req.app.pubSub.publish(
         formulaSubscription + req.params.gameId,
         gameSetup

@@ -112,11 +112,7 @@ const addCar = async ({
 
 type gameSetup = foGamesAttributes & gamesAttributes;
 
-const getGame = async ({
-  gameId,
-}: {
-  gameId: number;
-}): Promise<gameSetup> => {
+const getGame = async ({ gameId }: gameIdParam): Promise<gameSetup> => {
   const game = await games.findByPk(gameId, {
     include: [
       { model: foGames, as: "foGame" },
@@ -129,6 +125,10 @@ const getGame = async ({
         model: foCars,
         as: "foCars",
         include: [{ model: foDamages, as: "foDamages" }],
+      },
+      {
+        model: foDebris,
+        as: "foDebris",
       },
     ],
   });
@@ -155,7 +155,10 @@ const editGameSetup = async ({
   await game.save();
   await game.foGame.save();
 
-  await gamesUsers.update({ readyState: readyStateE.notReady }, { where: { gameId: gameId } });
+  await gamesUsers.update(
+    { readyState: readyStateE.notReady },
+    { where: { gameId: gameId } }
+  );
 };
 
 const editCarSetup = async ({
@@ -234,7 +237,10 @@ const start = async ({ gameId }: gameIdParam) => {
   // First, all users must be ready to start
   if (gameUsers.every((gameUser) => gameUser.readyState == readyStateE.ready)) {
     // We set the game to started
-    await games.update({ gameStateId: gamesStateIdE.started }, { where: { id: gameId } });
+    await games.update(
+      { gameStateId: gamesStateIdE.started },
+      { where: { id: gameId } }
+    );
 
     // We need to remove each user's excess cars
     //const gameCars = await foCars.findAll({ where: { gameId: gameId } });
@@ -287,8 +293,8 @@ const start = async ({ gameId }: gameIdParam) => {
         foTrackId: game.foGame.foTrackId,
         startingPosition: { [Op.not]: null },
       },
+      order: [["startingPosition", "ASC"]],
     });
-    startingPositions.sort((a, b) => a.startingPosition - b.startingPosition);
 
     game.foCars.forEach((car, carIndex) => {
       car.foPositionId = startingPositions[carIndex].id;
