@@ -11,9 +11,14 @@ import {
   authenticateToken,
 } from "../service/authentication.service";
 import formulaSvc, { gameSetup } from "../service/formulaGame.service";
-import { PreconditionRequiredError, UnauthorizedError } from "../utils/errors";
+import {
+  InvalidValueError,
+  PreconditionRequiredError,
+  UnauthorizedError,
+} from "../utils/errors";
 import { foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
 import { gamesStateIdEnum as gamesStateIdE } from "../../../common/src/models/enums/game";
+import { foTurns } from "../../../common/src/models/generated/foTurns";
 
 const router = express.Router();
 
@@ -211,5 +216,49 @@ const getTrack = router.get("/:gameId/track", async (req, res) => {
       throw e;
     });
 });
+
+/**
+ * Checks that its current users turn and that he is supposed to choose gear.
+ */
+const canChooseGear = async (req: Request & { user: usersAttributes }) => {
+  const gameId = parseInt(req.params.gameId);
+  const foCarId = parseInt(req.params.foCarId);
+
+  const game = await games.findByPk(gameId);
+  const nextTurn = await foTurns.findOne({
+    where: { gameId: gameId, gear: null },
+  });
+
+  return (
+    game.gameStateId == gamesStateIdE.started && nextTurn?.foCarId == foCarId
+  );
+};
+
+const postChooseGearRoute = router.post("/:gameId/car/:foCarId/chooseGear", [
+  (req, res, next) => authenticate(req, res, next),
+  (
+    req: Request & { app: { pubSub: PubSubJS.Base }; user: usersAttributes },
+    res: Response
+  ) => {
+    const gameId = parseInt(req.params.gameId);
+    const foCarId = parseInt(req.params.foCarId);
+    const payload = req.body;
+    authorize(req, res, canChooseGear).then(async () => {
+      await formulaSvc
+        .chooseGear({ gameId: gameId, carId: foCarId, gear: payload.gear })
+        .then(() => res.sendStatus(200))
+        .catch((e) => {
+          if (e instanceof InvalidValueError) {
+            res.status(InvalidValueError.code).send(e.message);
+          } else {
+            res.send(500).send(e.message);
+            throw e;
+          }
+        });
+      const game = await formulaSvc.getGame({ gameId: gameId });
+      req.app.pubSub.publish(formulaSubscription + req.params.gameId, game);
+    });
+  },
+]);
 
 export default router;

@@ -1,5 +1,8 @@
 import { Op } from "sequelize";
-import { carStateEnum as carStateE } from "../../../common/src/models/enums/formula";
+import {
+  carStateEnum as carStateE,
+  damageTypeEnum as damageTypeE,
+} from "../../../common/src/models/enums/formula";
 import {
   gamesStateIdEnum as gamesStateIdE,
   gamesUsersReadyStateEnum as readyStateE,
@@ -35,7 +38,7 @@ import {
   users,
   usersAttributes,
 } from "../../../common/src/models/generated/users";
-import { PreconditionRequiredError } from "../utils/errors";
+import { InvalidValueError, PreconditionRequiredError } from "../utils/errors";
 
 const config = {
   maxCarsPerPlayer: 15,
@@ -380,7 +383,6 @@ const processAutomaticActions = async ({ gameId }: gameIdParam) => {
           })
           .save();
         await nextCar.save();
-        console.log("branch 1");
         continue;
       } else if (isFastStart(blackDiceRoll)) {
         nextCar.gear = 1;
@@ -388,7 +390,6 @@ const processAutomaticActions = async ({ gameId }: gameIdParam) => {
           .build({ gameId: gameId, foCarId: nextCar.id, gear: 1, roll: 4 })
           .save();
         await nextCar.save();
-        console.log("branch 2");
         break;
       } else {
         nextCar.gear = 1;
@@ -401,7 +402,6 @@ const processAutomaticActions = async ({ gameId }: gameIdParam) => {
           })
           .save();
         await nextCar.save();
-        console.log("branch 3");
         break;
       }
     } else if (nextCar.gear == 0) {
@@ -415,22 +415,18 @@ const processAutomaticActions = async ({ gameId }: gameIdParam) => {
         })
         .save();
       await nextCar.save();
-      console.log("branch 4");
       break;
     } else if (nextCar != null) {
       await foTurns.build({ gameId: gameId, foCarId: nextCar.id }).save();
-      console.log("branch 4");
       break;
     } else if (nextCar == null) {
       const racingCarsNumber = await foCars.count({
         where: { gameId: gameId, state: carStateE.racing },
       });
       if (racingCarsNumber > 0) {
-        generateTurnOrder({ gameId: gameId });
-        console.log("branch 5");
+        await generateTurnOrder({ gameId: gameId });
         continue;
       } else {
-        console.log("branch 6");
         break;
       }
     }
@@ -452,6 +448,66 @@ const generateTurnOrder = async ({ gameId }: gameIdParam) => {
     })
   );
 };
+
+const chooseGear = async ({
+  gameId,
+  carId,
+  gear,
+}: gameIdParam & { carId: number; gear: number }) => {
+  const car = await foCars.findByPk(carId, {
+    include: { model: foDamages, as: "foDamages" },
+  });
+
+  if (gear > 6 || gear > car.gear + 1 || gear < 1) {
+    throw new InvalidValueError(`Invalid value of gear (${gear})`);
+  } else if (gear < car.gear - 1) {
+    // Dealing the damage
+    const updateDamages: foDamages[] = [];
+    switch (car.gear - gear) {
+      case 4:
+        updateDamages.push(
+          car.foDamages.find((damage) => damage.type == damageTypeE.engine)
+        );
+      case 3:
+        updateDamages.push(
+          car.foDamages.find((damage) => damage.type == damageTypeE.brakes)
+        );
+      case 2:
+        updateDamages.push(
+          car.foDamages.find((damage) => damage.type == damageTypeE.gearbox)
+        );
+        break;
+      default: // if the difference is bigger than 4, then it is invalid
+        throw new InvalidValueError(
+          `Invalid value of gear (${gear}), cannot downshift by 5`
+        );
+    }
+    if (updateDamages.some((damage) => damage.wearPoints <= 1)) {
+      throw new InvalidValueError(
+        `Invalid value of gear (${gear}), the car cannot sustain the damage`
+      );
+    } else {
+      await Promise.all(
+        updateDamages.map((updateDamage) => {
+          updateDamage.wearPoints--;
+          updateDamage.save();
+        })
+      );
+    }
+  }
+
+  // Perform the shifting after the damage was dealt
+  car.gear = gear;
+  const currentTurn = await foTurns.findOne({
+    where: { foCarId: carId, gear: null },
+  });
+  currentTurn.gear = gear;
+  currentTurn.roll = rollGearDice(gear);
+  await currentTurn.save();
+  await car.save();
+  await processAutomaticActions({ gameId: gameId });
+};
+
 export default {
   add,
   join,
@@ -461,5 +517,6 @@ export default {
   setUserReady,
   start,
   getTrack,
+  chooseGear,
 };
 export { gameSetup };
