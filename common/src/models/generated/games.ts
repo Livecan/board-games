@@ -6,6 +6,7 @@ import type { drTurns, drTurnsId } from './drTurns';
 import type { foCars, foCarsId } from './foCars';
 import type { foDebris, foDebrisId } from './foDebris';
 import type { foGames, foGamesCreationAttributes, foGamesId } from './foGames';
+import type { foTurns, foTurnsId } from './foTurns';
 import type { gameStates, gameStatesId } from './gameStates';
 import type { gameTypes, gameTypesId } from './gameTypes';
 import type { gamesUsers, gamesUsersId } from './gamesUsers';
@@ -114,6 +115,18 @@ export class games extends Model<gamesAttributes, gamesCreationAttributes> imple
   getFoGame!: Sequelize.HasOneGetAssociationMixin<foGames>;
   setFoGame!: Sequelize.HasOneSetAssociationMixin<foGames, foGamesId>;
   createFoGame!: Sequelize.HasOneCreateAssociationMixin<foGames>;
+  // games hasMany foTurns via gameId
+  foTurns!: foTurns[];
+  getFoTurns!: Sequelize.HasManyGetAssociationsMixin<foTurns>;
+  setFoTurns!: Sequelize.HasManySetAssociationsMixin<foTurns, foTurnsId>;
+  addFoTurn!: Sequelize.HasManyAddAssociationMixin<foTurns, foTurnsId>;
+  addFoTurns!: Sequelize.HasManyAddAssociationsMixin<foTurns, foTurnsId>;
+  createFoTurn!: Sequelize.HasManyCreateAssociationMixin<foTurns>;
+  removeFoTurn!: Sequelize.HasManyRemoveAssociationMixin<foTurns, foTurnsId>;
+  removeFoTurns!: Sequelize.HasManyRemoveAssociationsMixin<foTurns, foTurnsId>;
+  hasFoTurn!: Sequelize.HasManyHasAssociationMixin<foTurns, foTurnsId>;
+  hasFoTurns!: Sequelize.HasManyHasAssociationsMixin<foTurns, foTurnsId>;
+  countFoTurns!: Sequelize.HasManyCountAssociationsMixin;
   // games hasMany gamesUsers via gameId
   gamesUsers!: gamesUsers[];
   getGamesUsers!: Sequelize.HasManyGetAssociationsMixin<gamesUsers>;

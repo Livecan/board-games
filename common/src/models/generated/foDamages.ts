@@ -156,6 +156,14 @@ export class foDamages extends Model<foDamagesAttributes, foDamagesCreationAttri
           { name: "modified" },
         ]
       },
+      {
+        name: "fo_car_damage_type",
+        using: "BTREE",
+        fields: [
+          { name: "fo_car_id" },
+          { name: "type" },
+        ]
+      },
     ]
   });
   }

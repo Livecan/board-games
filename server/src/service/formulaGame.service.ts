@@ -1,17 +1,40 @@
 import { Op } from "sequelize";
 import { carStateEnum as carStateE } from "../../../common/src/models/enums/formula";
-import { gamesStateIdEnum as gamesStateIdE, gamesUsersReadyStateEnum as readyStateE } from "../../../common/src/models/enums/game";
+import {
+  gamesStateIdEnum as gamesStateIdE,
+  gamesUsersReadyStateEnum as readyStateE,
+} from "../../../common/src/models/enums/game";
+import {
+  isFastStart,
+  isSlowStart,
+  rollBlackDice,
+  rollGearDice,
+} from "../../../common/src/models/formula/dice";
 import { foCars } from "../../../common/src/models/generated/foCars";
 import { foCurves } from "../../../common/src/models/generated/foCurves";
-import { foDamages, foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
+import {
+  foDamages,
+  foDamagesAttributes,
+} from "../../../common/src/models/generated/foDamages";
+import { foDebris } from "../../../common/src/models/generated/foDebris";
 import { foEDamageTypes } from "../../../common/src/models/generated/foEDamageTypes";
-import { foGames, foGamesAttributes } from "../../../common/src/models/generated/foGames";
+import {
+  foGames,
+  foGamesAttributes,
+} from "../../../common/src/models/generated/foGames";
 import { foPosition2Positions } from "../../../common/src/models/generated/foPosition2Positions";
 import { foPositions } from "../../../common/src/models/generated/foPositions";
 import { foTracks } from "../../../common/src/models/generated/foTracks";
-import { games, gamesAttributes } from "../../../common/src/models/generated/games";
+import {
+  games,
+  gamesAttributes,
+} from "../../../common/src/models/generated/games";
 import { gamesUsers } from "../../../common/src/models/generated/gamesUsers";
-import { users, usersAttributes } from "../../../common/src/models/generated/users";
+import { foTurns } from "../../../common/src/models/generated/foTurns";
+import {
+  users,
+  usersAttributes,
+} from "../../../common/src/models/generated/users";
 import { PreconditionRequiredError } from "../utils/errors";
 
 const config = {
@@ -273,9 +296,11 @@ const start = async ({ gameId }: gameIdParam) => {
       car.order = carIndex + 1;
     });
 
-    game.foCars.forEach((car) => car.save());
+    await Promise.all(game.foCars.map(async (car) => await car.save()));
 
-    return game;
+    await processAutomaticActions({ gameId: gameId });
+
+    return await getGame({ gameId: gameId });
   } else {
     throw new PreconditionRequiredError("All players must be in ready state");
   }
@@ -326,6 +351,101 @@ const getTrack = async (
   });
 };
 
+const processAutomaticActions = async ({ gameId }: gameIdParam) => {
+  for (;;) {
+    const nextCar = await foCars.findOne({
+      where: { gameId: gameId, order: { [Op.not]: null } },
+      order: [["order", "ASC"]],
+    });
+    // @todo Figure out what to do with this - either enums or a function
+    if (nextCar.gear == -1) {
+      const blackDiceRoll = rollBlackDice();
+      if (isSlowStart(blackDiceRoll)) {
+        nextCar.gear = 0;
+        nextCar.order = null;
+        await foTurns
+          .build({
+            gameId: gameId,
+            foCarId: nextCar.id,
+            lap: nextCar.lap,
+            foPositionId: nextCar.foPositionId,
+            gear: 0,
+            roll: 0,
+          })
+          .save();
+        await nextCar.save();
+        console.log("branch 1");
+        continue;
+      } else if (isFastStart(blackDiceRoll)) {
+        nextCar.gear = 1;
+        await foTurns
+          .build({ gameId: gameId, foCarId: nextCar.id, gear: 1, roll: 4 })
+          .save();
+        await nextCar.save();
+        console.log("branch 2");
+        break;
+      } else {
+        nextCar.gear = 1;
+        await foTurns
+          .build({
+            gameId: gameId,
+            foCarId: nextCar.id,
+            gear: 1,
+            roll: rollGearDice(1),
+          })
+          .save();
+        await nextCar.save();
+        console.log("branch 3");
+        break;
+      }
+    } else if (nextCar.gear == 0) {
+      nextCar.gear = 1;
+      await foTurns
+        .build({
+          gameId: gameId,
+          foCarId: nextCar.id,
+          gear: 1,
+          roll: rollGearDice(1),
+        })
+        .save();
+      await nextCar.save();
+      console.log("branch 4");
+      break;
+    } else if (nextCar != null) {
+      await foTurns.build({ gameId: gameId, foCarId: nextCar.id }).save();
+      console.log("branch 4");
+      break;
+    } else if (nextCar == null) {
+      const racingCarsNumber = await foCars.count({
+        where: { gameId: gameId, state: carStateE.racing },
+      });
+      if (racingCarsNumber > 0) {
+        generateTurnOrder({ gameId: gameId });
+        console.log("branch 5");
+        continue;
+      } else {
+        console.log("branch 6");
+        break;
+      }
+    }
+  }
+};
+
+const generateTurnOrder = async ({ gameId }: gameIdParam) => {
+  const cars = await foCars.findAll({
+    where: { gameId: gameId, state: carStateE.racing },
+    order: [
+      ["lap", "DESC"],
+      ["foPositionId", "DESC"],
+    ],
+  });
+  await Promise.all(
+    cars.map(async (car, index) => {
+      car.order = index + 1;
+      await car.save();
+    })
+  );
+};
 export default {
   add,
   join,
