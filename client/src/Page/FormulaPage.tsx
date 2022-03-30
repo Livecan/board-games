@@ -12,6 +12,7 @@ import commonConfig from "../../../common/src/config/config";
 import FormulaSetup from "../Component/FormulaSetup";
 import FormulaGamePlay from "../Component/FormulaGamePlay";
 import { gamesStateIdEnum as gameStateIdE } from "../../../common/src/models/enums/game";
+import { foDebrisAttributes } from "../../../common/src/models/generated/foDebris";
 
 interface car extends foCarsAttributes {
   foDamages: foDamagesAttributes[];
@@ -21,6 +22,7 @@ interface formulaGame extends gamesAttributes, foGamesAttributes {}
 
 interface fullFormulaGame extends formulaGame {
   foCars: car[];
+  foDebris?: foDebrisAttributes[];
   gamesUsers: (gamesUsersAttributes & { user: usersAttributes })[];
 }
 

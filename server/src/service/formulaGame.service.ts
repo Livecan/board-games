@@ -38,7 +38,9 @@ import {
   users,
   usersAttributes,
 } from "../../../common/src/models/generated/users";
+import { getMos } from "../../../common/src/models/formula/moveOption";
 import { InvalidValueError, PreconditionRequiredError } from "../utils/errors";
+import { fullFormulaGame } from "../Page/FormulaPage";
 
 const config = {
   maxCarsPerPlayer: 15,
@@ -508,6 +510,45 @@ const chooseGear = async ({
   await processAutomaticActions({ gameId: gameId });
 };
 
+const getMoveOptions = async ({ gameId }: gameIdParam) => {
+  const game = await games.findByPk(gameId, {
+    include: [
+      { model: foGames, as: "foGame" },
+      {
+        model: foCars,
+        as: "foCars",
+        include: [{ model: foDamages, as: "foDamages" }],
+      },
+      { model: foDebris, as: "foDebris" },
+      { model: gamesUsers, as: "gamesUsers" },
+    ],
+  });
+  const fullGame: fullFormulaGame = {
+    ...game.toJSON(),
+    ...game.foGame.toJSON(),
+  };
+  const track = await foTracks.findByPk(fullGame.foTrackId, {
+    include: [
+      { model: foCurves, as: "foCurves" },
+      {
+        model: foPositions,
+        as: "foPositions",
+        include: [
+          { model: foPosition2Positions, as: "foPosition2Positions" },
+          {
+            model: foPosition2Positions,
+            as: "foPositionToFoPosition2Positions",
+          },
+        ],
+      },
+    ],
+  });
+  const foTurn = await foTurns.findOne({
+    where: { gameId: gameId, foPositionId: null },
+  });
+  return getMos(fullGame, track, foTurn.roll);
+};
+
 export default {
   add,
   join,
@@ -518,5 +559,6 @@ export default {
   start,
   getTrack,
   chooseGear,
+  getMoveOptions,
 };
 export { gameSetup };
