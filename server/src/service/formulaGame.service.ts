@@ -40,7 +40,7 @@ import {
 } from "../../../common/src/models/generated/users";
 import { getMos } from "../../../common/src/models/formula/moveOption";
 import { InvalidValueError, PreconditionRequiredError } from "../utils/errors";
-import { fullFormulaGame } from "../Page/FormulaPage";
+import { fullFormulaGame } from "../../../common/src/models/interfaces/formula";
 
 const config = {
   maxCarsPerPlayer: 15,
@@ -327,7 +327,7 @@ interface foTrackIdParam {
 
 const getTrack = async (
   params: (gameIdParam | foTrackIdParam) & {
-    include?: { foPosition2Position?: Boolean };
+    include?: { foPosition2Position?: boolean };
   }
 ) => {
   let foTrackId;
