@@ -61,6 +61,7 @@ app.use(`/${commonConfig.apiBaseUrl}game`, gameRoutes);
 app.use(`/${commonConfig.apiBaseUrl}formula`, formulaRoutes);
 
 app.use('/resources', express.static("./client-build"));
+app.use('/resources', express.static("./resources"));
 
 const port = process.env.PORT || 5000;
 
