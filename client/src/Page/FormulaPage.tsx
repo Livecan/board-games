@@ -1,30 +1,12 @@
 import React, { useContext, useState } from "react";
 import { useParams } from "react-router-dom";
-import { foCarsAttributes } from "../../../common/src/models/generated/foCars";
-import { foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
-import { foGamesAttributes } from "../../../common/src/models/generated/foGames";
-import { gamesAttributes } from "../../../common/src/models/generated/games";
-import { gamesUsersAttributes } from "../../../common/src/models/generated/gamesUsers";
-import { usersAttributes } from "../../../common/src/models/generated/users";
 import loginContext from "../Context/LoginContext";
 import useWebSocket from "../Hook/UseWebSocketHook";
 import commonConfig from "../../../common/src/config/config";
 import FormulaSetup from "../Component/FormulaSetup";
 import FormulaGamePlay from "../Component/FormulaGamePlay";
 import { gamesStateIdEnum as gameStateIdE } from "../../../common/src/models/enums/game";
-import { foDebrisAttributes } from "../../../common/src/models/generated/foDebris";
-
-interface car extends foCarsAttributes {
-  foDamages: foDamagesAttributes[];
-}
-
-interface formulaGame extends gamesAttributes, foGamesAttributes {}
-
-interface fullFormulaGame extends formulaGame {
-  foCars: car[];
-  foDebris?: foDebrisAttributes[];
-  gamesUsers: (gamesUsersAttributes & { user: usersAttributes })[];
-}
+import { fullFormulaGame } from "../../../common/src/models/interfaces/formula";
 
 const FormulaPage = () => {
   const [userData] = useContext(loginContext);
@@ -55,4 +37,3 @@ const FormulaPage = () => {
 };
 
 export default FormulaPage;
-export { car, formulaGame, fullFormulaGame };

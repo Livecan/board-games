@@ -1,21 +1,6 @@
-// @todo Move this interface into commons
-import { car, fullFormulaGame } from "../../../../client/src/Page/FormulaPage";
 import { damageTypeEnum as damageTypeE } from "../enums/formula";
-import { foCurvesAttributes } from "../generated/foCurves";
 import { foDamagesCreationAttributes } from "../generated/foDamages";
-import { foPosition2PositionsAttributes } from "../generated/foPosition2Positions";
-import { foPositionsAttributes } from "../generated/foPositions";
-import { foTracksAttributes } from "../generated/foTracks";
-
-interface fullPosition extends foPositionsAttributes {
-  foPosition2Positions: foPosition2PositionsAttributes[];
-  foPositionToFoPosition2Positions: foPosition2PositionsAttributes[];
-}
-
-interface fullTrack extends foTracksAttributes {
-  foCurves: foCurvesAttributes[];
-  foPositions: fullPosition[];
-}
+import { car, fullFormulaGame, fullPosition, fullTrack } from "../interfaces/formula";
 
 enum DirectionEnum {
   left,
