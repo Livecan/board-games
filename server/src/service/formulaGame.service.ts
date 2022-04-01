@@ -117,7 +117,7 @@ const addCar = async ({
 
 type gameSetup = foGamesAttributes & gamesAttributes;
 
-const getGame = async ({ gameId }: gameIdParam): Promise<gameSetup> => {
+const getGame = async ({ gameId }: gameIdParam): Promise<fullFormulaGame> => {
   const game = await games.findByPk(gameId, {
     include: [
       { model: foGames, as: "foGame" },
@@ -135,9 +135,22 @@ const getGame = async ({ gameId }: gameIdParam): Promise<gameSetup> => {
         model: foDebris,
         as: "foDebris",
       },
+      {
+        model: foTurns,
+        as: "foTurns",
+        where: {
+          [Op.or]: [{ gear: null }, { foPositionId: null }],
+        },
+      },
     ],
   });
-  const gameSetup = { ...game.toJSON(), ...game.foGame.toJSON() };
+  const gameSetup = {
+    ...game.toJSON(),
+    ...game.foGame.toJSON(),
+    lastTurn: game.foTurns.pop(),
+    foTurns: null,
+  } as fullFormulaGame;
+
   // @ts-ignore
   delete gameSetup.foGame;
   return gameSetup;
