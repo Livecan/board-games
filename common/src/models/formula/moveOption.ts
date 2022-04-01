@@ -1,6 +1,11 @@
 import { damageTypeEnum as damageTypeE } from "../enums/formula";
 import { foDamagesCreationAttributes } from "../generated/foDamages";
-import { car, fullFormulaGame, fullPosition, fullTrack } from "../interfaces/formula";
+import {
+  car,
+  fullFormulaGame,
+  fullPosition,
+  fullTrack,
+} from "../interfaces/formula";
 
 enum DirectionEnum {
   left,
@@ -175,11 +180,11 @@ const getNextMos = (game: fullFormulaGame, track: fullTrack, current: Mo) => {
       nextMo.overtakeHistory = DirectionEnum.right;
     }
 
-    const isCarAhead = game.foCars.find((car) => {
-      car.foPositionId ==
-        positionTo.foPosition2Positions.find((p2p) => !!p2p.isStraight)
-          .foPositionToId;
-    });
+    const isCarAhead = game.foCars.find((car) =>
+      positionTo.foPosition2Positions.some(
+        (p2p) => !!p2p.isStraight && p2p.foPositionToId == car.foPositionId
+      )
+    );
     if (isCarAhead) {
       nextMo.overtakeHistory = null;
       nextMo.overtakeLeft = 3;
