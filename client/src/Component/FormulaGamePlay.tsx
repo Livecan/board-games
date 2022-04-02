@@ -7,15 +7,40 @@ import {
 } from "../../../common/src/models/interfaces/formula";
 import commonConfig from "../../../common/src/config/config";
 import LoginContext from "../Context/LoginContext";
+import { foPositionsAttributes } from "../../../common/src/models/generated/foPositions";
 
 const getCarImageSrc = (carIndex: number) =>
   `${Math.trunc(carIndex / 2) + 1}${carIndex % 2 == 0 ? "a" : "b"}.png`;
 
+const getMoImageSrc = (isSelected: boolean, isDamaged: boolean) =>
+  `car-outline-${
+    isSelected ? "selected" : isDamaged ? "damage" : "nodamage"
+  }.svg`;
+
+const CarSprite = (props: {
+  src: string;
+  position: foPositionsAttributes;
+  onClick?: () => void;
+}) => (
+  <Box
+    component="img"
+    src={props.src}
+    height="1.2%"
+    width="1.2%"
+    position="absolute"
+    left={`${props.position.posX / 1000 - 0.6}%`}
+    top={`${props.position.posY / 1000 - 0.6}%`}
+    sx={{
+      transform: `rotate(${props.position.angle}rad)`,
+      cursor: "pointer",
+    }}
+    onClick={props.onClick}
+  />
+);
+
 const FormulaTrackBoard = ({ game }: { game: fullFormulaGame }) => {
   const [userData] = useContext(LoginContext);
-
   const [track, setTrack] = useState<fullTrack>(null);
-
   const [availableMOs, setAvailableMOs] = useState(null);
   const [selectedMO, setSelectedMO] = useState(null);
 
@@ -26,8 +51,6 @@ const FormulaTrackBoard = ({ game }: { game: fullFormulaGame }) => {
   }, [game.foTrackId]);
 
   useEffect(() => {
-    // @todo If my car is next and it's my turn to pick next position,
-    // first need, to load next available move options
     const nextCar = game.foCars.find((car) => car.id == game.lastTurn.foCarId);
     if (nextCar.userId == userData.user.id && game.lastTurn.roll != null) {
       axios
@@ -55,59 +78,28 @@ const FormulaTrackBoard = ({ game }: { game: fullFormulaGame }) => {
           src="/resources/formula/tracks/monaco.jpg"
           width="100%"
         />
-        {game.foCars.map((car, index) => {
-          const position = track.foPositions.find(
-            (position) => position.id == car.foPositionId
-          );
-          return (
-            <Box
-              key={index}
-              component="img"
-              src={`/resources/formula/cars/${getCarImageSrc(index)}`}
-              width="1.2%"
-              height="1.2%"
-              position="absolute"
-              left={`${position.posX / 1000 - 0.6}%`}
-              top={`${position.posY / 1000 - 0.6}%`}
-              sx={{
-                transition: "opacity .5s",
-                transform: `rotate(${position.angle}rad)`,
-                ":hover": {
-                  opacity: 0.2,
-                },
-              }}
-            />
-          );
-        })}
-        {availableMOs?.map((mo, index) => {
-          //@todo Refactor with the car icons and save space
-          const position = track.foPositions.find(
-            (position) => position.id == mo.foPositionId
-          );
-          return (
-            <Box
-              key={index}
-              component="img"
-              src={`/resources/formula/move-options/car-outline-${
-                mo == selectedMO
-                  ? "selected"
-                  : mo.foDamages.some((damage) => damage.wearPoints > 0)
-                  ? "damage"
-                  : "nodamage"
-              }.svg`}
-              height="1.8%"
-              width="1.2%"
-              position="absolute"
-              left={`${position.posX / 1000 - 0.6}%`}
-              top={`${position.posY / 1000 - 0.9}%`}
-              sx={{
-                transform: `rotate(${position.angle}rad)`,
-                cursor: "pointer",
-              }}
-              onClick={() => setSelectedMO(mo)}
-            />
-          );
-        })}
+        {game.foCars.map((car, index) => (
+          <CarSprite
+            key={index}
+            src={`/resources/formula/cars/${getCarImageSrc(index)}`}
+            position={track.foPositions.find(
+              (position) => position.id == car.foPositionId
+            )}
+          />
+        ))}
+        {availableMOs?.map((mo, index) => (
+          <CarSprite
+            key={index}
+            src={`/resources/formula/move-options/${getMoImageSrc(
+              mo == selectedMO,
+              mo.foDamages.some((damage) => damage.wearPoints > 0)
+            )}`}
+            position={track.foPositions.find(
+              (position) => position.id == mo.foPositionId
+            )}
+            onClick={() => setSelectedMO(mo)}
+          />
+        ))}
       </Box>
     )
   );
