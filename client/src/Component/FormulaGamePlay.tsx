@@ -1,4 +1,12 @@
-import { Box, Grid, Theme, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Grid,
+  Stack,
+  TextField,
+  Theme,
+  Typography,
+  useMediaQuery,
+} from "@mui/material";
 import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
 import {
@@ -17,24 +25,31 @@ const getMoImageSrc = (isSelected: boolean, isDamaged: boolean) =>
     isSelected ? "selected" : isDamaged ? "damage" : "nodamage"
   }.svg`;
 
-const CarSprite = (props: {
+const CarSprite = ({
+  src,
+  position,
+  onClick,
+}: {
   src: string;
   position: foPositionsAttributes;
   onClick?: () => void;
 }) => (
   <Box
     component="img"
-    src={props.src}
+    src={src}
     height="1.2%"
     width="1.2%"
-    position="absolute"
-    left={`${props.position.posX / 1000 - 0.6}%`}
-    top={`${props.position.posY / 1000 - 0.6}%`}
+    position={"absolute"}
+    // @todo If these are used, can I use it in Game Panel?
+    left={`${position.posX / 1000 - 0.6}%`}
+    top={`${position.posY / 1000 - 0.6}%`}
+    // @todo How to do this styling?
     sx={{
-      transform: `rotate(${props.position.angle}rad)`,
+      transform: `rotate(${position.angle}rad)`,
+      // @todo Figure out if we want all these
       cursor: "pointer",
     }}
-    onClick={props.onClick}
+    onClick={onClick}
   />
 );
 
@@ -117,7 +132,31 @@ const FormulaGamePlay = ({
       <FormulaTrackBoard game={game} />
     </Grid>
     <Grid item xs={12} sm={3}>
-      <div>Control panel</div>
+      {/* @todo Move the following into a separate Game Panel info component */}
+      <Stack>
+        {game.foCars.map((car) => (
+          <React.Fragment key={car.id}>
+            <Typography>
+              {game.gamesUsers.find((u) => (u.id = car.userId)).user.name}
+            </Typography>
+            <Stack direction="row">
+              {car.foDamages.map((damage) => (
+                <TextField
+                  // @todo This much styling here in code looks like an antipattern and might clash with other styling, think of some single source of truth
+                  inputProps={{
+                    style: {
+                      paddingLeft: 0,
+                      paddingRight: 0,
+                      textAlign: "center",
+                    },
+                  }}
+                  value={damage.wearPoints}
+                />
+              ))}
+            </Stack>
+          </React.Fragment>
+        ))}
+      </Stack>
     </Grid>
   </Grid>
 );
