@@ -1,5 +1,5 @@
 import { Box, SxProps, Theme, useMediaQuery } from "@mui/material";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
 import { foPositionsAttributes } from "../../../common/src/models/generated/foPositions";
 import {
@@ -56,11 +56,16 @@ const FormulaGameBoard = <
   availableMOs?: MO[];
   onSelectMO?: (mo: MO) => void;
 }) => {
-  const [selectedMOs, setSelectedMOs] = useState<MO | MO[]>(null);
+  const [selectedMOs, setSelectedMOs] = useState<MO | Array<MO>>(null);
 
   useEffect(() => {
     setSelectedMOs(null);
   }, [availableMOs]);
+
+  const moPositionIds = useMemo(
+    () => [...new Set(availableMOs?.map((mo) => mo.foPositionId))],
+    [availableMOs]
+  );
 
   // @todo Consider using width param?
   const isMd = useMediaQuery((theme: Theme) => theme.breakpoints.up("md"));
@@ -72,13 +77,16 @@ const FormulaGameBoard = <
           src="/resources/formula/tracks/monaco.jpg"
           width="100%"
         />
-        {game.foDebris.map(debris =>
+        {game.foDebris.map((debris) => (
           <CarSprite
             key={debris.id}
             src="/resources/formula/track-objects/oil.png"
-            position={track.foPositions.find((position) => position.id == debris.foPositionId)}
-            sx={{opacity: 0.8}} />
-        )}
+            position={track.foPositions.find(
+              (position) => position.id == debris.foPositionId
+            )}
+            sx={{ opacity: 0.8 }}
+          />
+        ))}
         {game.foCars.map((car, index) => (
           <CarSprite
             key={car.id}
@@ -91,6 +99,21 @@ const FormulaGameBoard = <
         ))}
         {/* @todo Need to do some sort of unique positions here and onClick
             should pick the MOs from the availableMOs */}
+        {moPositionIds.map((positionId) => (
+          <CarSprite
+            key={positionId}
+            src={`/resources/formula/move-options/${getMoImageSrc(
+              positionId ==
+                (selectedMOs instanceof Array ? selectedMOs[0] : selectedMOs)
+                  ?.foPositionId,
+              // @todo If MO will only contains traverse, will need to calculate the damage, probably do it in useMemo prior to here
+              // If there are multiple MOs selected or if only one selected and it has damage, use damage MO icon
+              selectedMOs instanceof Array ||
+                selectedMOs?.foDamages?.some((damage) => damage.wearPoints > 0)
+            )}`}
+            position={track.foPositions.find((pos) => pos.id == positionId)}
+          />
+        ))}
         {availableMOs?.map((mo, index) => (
           <CarSprite
             key={index}
