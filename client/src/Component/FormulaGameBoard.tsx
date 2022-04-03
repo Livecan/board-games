@@ -72,6 +72,13 @@ const FormulaGameBoard = <
           src="/resources/formula/tracks/monaco.jpg"
           width="100%"
         />
+        {game.foDebris.map(debris =>
+          <CarSprite
+            key={debris.id}
+            src="/resources/formula/track-objects/oil.png"
+            position={track.foPositions.find((position) => position.id == debris.foPositionId)}
+            sx={{opacity: 0.8}} />
+        )}
         {game.foCars.map((car, index) => (
           <CarSprite
             key={car.id}
@@ -110,7 +117,6 @@ const FormulaGameBoard = <
             sx={{ cursor: "pointer" }}
           />
         ))}
-        {/* @todo Display oil splodges on board */}
       </Box>
     )
   );
