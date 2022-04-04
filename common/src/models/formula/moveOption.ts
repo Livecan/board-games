@@ -5,6 +5,7 @@ import {
   fullFormulaGame,
   fullPosition,
   fullTrack,
+  moveOption,
 } from "../interfaces/formula";
 
 enum DirectionEnum {
@@ -71,7 +72,7 @@ class Mo {
     }
   }
 
-  export() {
+  export(): moveOption {
     return {
       foPositionId: this.foPositionId,
       foCurveId: this.foCurveId,

@@ -1,6 +1,6 @@
 import { foCarsAttributes } from "../generated/foCars";
 import { foCurvesAttributes } from "../generated/foCurves";
-import { foDamagesAttributes } from "../generated/foDamages";
+import { foDamagesAttributes, foDamagesCreationAttributes } from "../generated/foDamages";
 import { foDebrisAttributes } from "../generated/foDebris";
 import { foGamesAttributes } from "../generated/foGames";
 import { foPosition2PositionsAttributes } from "../generated/foPosition2Positions";
@@ -34,4 +34,12 @@ interface fullFormulaGame extends formulaGame {
   lastTurn?: foTurnsAttributes;
 }
 
-export {fullPosition, fullTrack, car, formulaGame, fullFormulaGame};
+interface moveOption {
+  foPositionId: number;
+  foCurveId: number;
+  isNextLap: boolean;
+  foDamages: foDamagesCreationAttributes[];
+  traverse: number[];
+}
+
+export {fullPosition, fullTrack, car, formulaGame, fullFormulaGame, moveOption};
