@@ -4,7 +4,6 @@ import {
   SxProps,
   Theme,
   Tooltip,
-  Typography,
   useMediaQuery,
 } from "@mui/material";
 import React, { useEffect, useMemo, useState } from "react";
@@ -18,6 +17,7 @@ import {
 const getCarImageSrc = (carIndex: number) =>
   `${Math.trunc(carIndex / 2) + 1}${carIndex % 2 == 0 ? "a" : "b"}.png`;
 
+// @todo Create an svg component instead of this
 const getMoImageSrc = (isSelected: boolean, isDamaged: boolean) =>
   `car-outline-${
     isSelected ? "selected" : isDamaged ? "damage" : "nodamage"
@@ -57,6 +57,46 @@ const CarSprite = React.forwardRef(
     />
   )
 );
+
+const MoveOption = ({
+  mos,
+  selected,
+  position,
+  onSelect,
+  onUnselect,
+}: {
+  mos: moveOption[];
+  selected: moveOption | null;
+  position: foPositionsAttributes;
+  onSelect: (selected: moveOption) => void;
+  onUnselect: () => void;
+}) => {
+  const hasDamaged = useMemo(
+    () => mos[0].foDamages.some((dmg) => dmg.wearPoints > 0),
+    [mos]
+  );
+  const isSelected = selected?.foPositionId == position.id;
+  return (
+    <ClickAwayListener onClickAway={() => onUnselect()}>
+      {/* The div helps handling ClickAwayListener properly, otherwise clicking the tootlip would trigger onClickAway */}
+      <div>
+        <Tooltip open={isSelected && hasDamaged} title="Damage table!">
+          <CarSprite
+            src={`/resources/formula/move-options/${getMoImageSrc(
+              isSelected,
+              // @todo If MO will only contains traverse, will need to calculate the damage, probably do it in useMemo prior to here
+              // If there are multiple MOs selected or if only one selected and it has damage, use damage MO icon
+              hasDamaged
+            )}`}
+            position={position}
+            onClick={() => onSelect(mos[0])}
+            sx={{ cursor: "pointer" }}
+          />
+        </Tooltip>
+      </div>
+    </ClickAwayListener>
+  );
+};
 
 // @todo Create TS interface for MO
 const FormulaGameBoard = ({
@@ -131,35 +171,15 @@ const FormulaGameBoard = ({
         ))}
         {[...mosByPositionId.entries()].map(
           ([positionId, mos]) =>
+            // If a MO is selected, display only it, otherwise display all
             (selected == null || selected.foPositionId == positionId) && (
-              <ClickAwayListener
-                key={positionId}
-                onClickAway={() => setSelected(null)}
-              >
-                <Tooltip
-                  open={
-                    selected?.foPositionId == positionId &&
-                    !!selected?.foDamages?.some((dmg) => dmg.wearPoints > 0)
-                  }
-                  title="Damage table!"
-                >
-                  <CarSprite
-                    src={`/resources/formula/move-options/${getMoImageSrc(
-                      selected?.foPositionId == positionId,
-                      // @todo If MO will only contains traverse, will need to calculate the damage, probably do it in useMemo prior to here
-                      // If there are multiple MOs selected or if only one selected and it has damage, use damage MO icon
-                      mos.some((mo) =>
-                        mo.foDamages.some((dmg) => dmg.wearPoints > 0)
-                      )
-                    )}`}
-                    position={track.foPositions.find(
-                      (pos) => pos.id == positionId
-                    )}
-                    onClick={() => setSelected(mos[0])}
-                    sx={{ cursor: "pointer" }}
-                  />
-                </Tooltip>
-              </ClickAwayListener>
+              <MoveOption
+                mos={mos}
+                position={track.foPositions.find((pos) => pos.id == positionId)}
+                selected={selected}
+                onSelect={setSelected}
+                onUnselect={() => setSelected(null)}
+              />
             )
         )}
       </Box>
