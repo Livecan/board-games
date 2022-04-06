@@ -225,13 +225,21 @@ const canChooseGear = async (req: Request & { user: usersAttributes }) => {
   const gameId = parseInt(req.params.gameId);
   const foCarId = parseInt(req.params.foCarId);
 
-  const game = await games.findByPk(gameId, {include: {model: foCars, as: "foCars", where: {id: foCarId, userId: req.user.id}}});
+  const game = await games.findByPk(gameId, {
+    include: {
+      model: foCars,
+      as: "foCars",
+      where: { id: foCarId, userId: req.user.id },
+    },
+  });
   const nextTurn = await foTurns.findOne({
     where: { gameId: gameId, gear: null },
   });
 
   return (
-    game.gameStateId == gamesStateIdE.started && game.foCars.length && nextTurn?.foCarId == foCarId
+    game.gameStateId == gamesStateIdE.started &&
+    game.foCars.length &&
+    nextTurn?.foCarId == foCarId
   );
 };
 
@@ -265,39 +273,51 @@ const postChooseGearRoute = router.post("/:gameId/car/:foCarId/chooseGear", [
 /**
  * Checks that its current users turn and that he is supposed to choose MoveOption.
  */
-const canChooseMoveOptions = async (req: Request & { user: usersAttributes }) => {
+const canChooseMoveOptions = async (
+  req: Request & { user: usersAttributes }
+) => {
   const gameId = parseInt(req.params.gameId);
   const foCarId = parseInt(req.params.foCarId);
 
-  const game = await games.findByPk(gameId, {include: {model: foCars, as: "foCars", where: {id: foCarId, userId: req.user.id}}});
+  const game = await games.findByPk(gameId, {
+    include: {
+      model: foCars,
+      as: "foCars",
+      where: { id: foCarId, userId: req.user.id },
+    },
+  });
   const nextTurn = await foTurns.findOne({
-    where: { gameId: gameId, foCarId: foCarId, gear: {[Op.not]: null}, foPositionId: null },
+    where: {
+      gameId: gameId,
+      foCarId: foCarId,
+      gear: { [Op.not]: null },
+      foPositionId: null,
+    },
   });
 
   return (
-    game.gameStateId == gamesStateIdE.started && game.foCars.length && nextTurn?.foCarId == foCarId
+    game.gameStateId == gamesStateIdE.started &&
+    game.foCars.length &&
+    nextTurn?.foCarId == foCarId
   );
 };
 
 const GetMoveOptions = router.get("/:gameId/car/:foCarId/moveOptions", [
   (req, res, next) => authenticate(req, res, next),
-  (
-    req: Request & { user: usersAttributes },
-    res: Response
-  ) => {
+  (req: Request & { user: usersAttributes }, res: Response) => {
     const gameId = parseInt(req.params.gameId);
     const foCarId = parseInt(req.params.foCarId);
-    authorize(req, res, canChooseMoveOptions)
-      .then(() => {
-        formulaSvc.getMoveOptions({gameId: gameId})
-          .then(moveOptions => res.send(moveOptions))
-          .catch(e => {
-            res.status(500).send(e);
-            throw e;
-          });
-      });
+    authorize(req, res, canChooseMoveOptions).then(() => {
+      formulaSvc
+        .getMoveOptions({ gameId: gameId })
+        .then((moveOptions) => res.send(moveOptions))
+        .catch((e) => {
+          res.status(500).send(e);
+          throw e;
+        });
+    });
   },
-])
+]);
 
 const postMakeMove = router.post("/:gameId/car/:foCarId/position", [
   (req, res, next) => authenticate(req, res, next),
