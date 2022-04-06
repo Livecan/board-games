@@ -11,9 +11,20 @@ import {
 } from "@mui/material";
 import FormulaPage from "./Page/FormulaPage";
 import GamesOverviewPage from "./Page/GamesOverviewPage";
+import axios from "axios";
 
 const App: React.FC = () => {
-  const [userData, login, logout] = useLogin(null);
+  axios.interceptors.request.use((config) => {
+    config.headers = { ...config.headers, accept: "application/json" };
+    return config;
+  });
+  const [userData, login, logout] = useLogin({
+    onLogin: (userData) =>
+      axios.interceptors.request.use((config) => {
+        config.headers = { ...config.headers, Authorization: userData.jwt };
+        return config;
+      }),
+  });
 
   const theme = createTheme({
     palette: {

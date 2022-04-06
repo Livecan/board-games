@@ -52,13 +52,7 @@ const GamesList = (props: {
                 axios
                   .post(
                     `/${commonConfig.apiBaseUrl}game/${game.id}/join`,
-                    {},
-                    {
-                      headers: {
-                        Authorization: userData.jwt,
-                        accept: "application/json",
-                      },
-                    }
+                    {}
                   )
                   .then((response) =>
                     joinGame(response.data.id, response.data.gameTypeId)

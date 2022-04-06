@@ -27,13 +27,7 @@ const GamesOverviewPage = () => {
     axios
       .post(
         `${commonConfig.apiBaseUrl}formula/add`,
-        {},
-        {
-          headers: {
-            Authorization: userData.jwt,
-            accept: "application/json",
-          },
-        }
+        {}
       )
       .then((response) =>
         navigateToGame(response.data.id, response.data.gameTypeId)

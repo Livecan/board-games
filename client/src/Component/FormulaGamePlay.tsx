@@ -25,13 +25,7 @@ const FormulaTrackPanel = ({ game }: { game: fullFormulaGame }) => {
     if (nextCar.userId == userData.user.id && game.lastTurn.roll != null) {
       axios
         .get(
-          `/${commonConfig.apiBaseUrl}formula/${game.id}/car/${nextCar.id}/moveOptions`,
-          {
-            headers: {
-              Authorization: userData.jwt,
-              accept: "application/json",
-            },
-          }
+          `/${commonConfig.apiBaseUrl}formula/${game.id}/car/${nextCar.id}/moveOptions`
         )
         .then((response) => setAvailableMOs(response.data));
     } else {

@@ -22,7 +22,11 @@ import { gamesAttributes } from "../../../common/src/models/generated/games";
 import { gamesUsersAttributes } from "../../../common/src/models/generated/gamesUsers";
 import { foGamesAttributes } from "../../../common/src/models/generated/foGames";
 import useDebouncedState from "../Hook/UseDebouncedState";
-import { car, formulaGame, fullFormulaGame } from "../Page/FormulaPage";
+import {
+  car,
+  formulaGame,
+  fullFormulaGame,
+} from "../../../common/src/models/interfaces/formula";
 import { gamesUsersReadyStateEnum as readyStateE } from "../../../common/src/models/enums/game";
 
 const FlexBox = ({ sx = {}, children = {}, ...rest }: BoxProps) => (
@@ -190,13 +194,7 @@ const UserCars = (props: {
         carUpdate.foDamages.map((damage) => ({
           type: damage.type,
           wearPoints: damage.wearPoints,
-        })),
-        {
-          headers: {
-            Authorization: userData.jwt,
-            accept: "application/json",
-          },
-        }
+        }))
       );
     }
   }, [diffCars]);
@@ -217,12 +215,6 @@ const UserCars = (props: {
         `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup/ready`,
         {
           isReady: debouncedReadyState,
-        },
-        {
-          headers: {
-            Authorization: userData.jwt,
-            accept: "application/json",
-          },
         }
       );
     }
@@ -291,29 +283,14 @@ const GameSetup = (props: {
   const isCreator = userData?.user?.id == game.creatorId;
 
   const startGame = () => {
-    axios.post(
-      `/${commonConfig.apiBaseUrl}formula/${props.game.id}/start`,
-      {},
-      {
-        headers: {
-          Authorization: userData.jwt,
-          accept: "application/json",
-        },
-      }
-    );
+    axios.post(`/${commonConfig.apiBaseUrl}formula/${props.game.id}/start`, {});
   };
 
   useEffect(() => {
     if (debouncedGame != props.game) {
       axios.post(
         `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup`,
-        debouncedGame,
-        {
-          headers: {
-            Authorization: userData.jwt,
-            accept: "application/json",
-          },
-        }
+        debouncedGame
       );
     }
   }, [debouncedGame]);
