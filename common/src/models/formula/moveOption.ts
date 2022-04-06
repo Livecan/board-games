@@ -83,7 +83,49 @@ class Mo {
   }
 }
 
+const validateMo = (
+  traverse: number[],
+  game: fullFormulaGame,
+  track: fullTrack
+) => {
+  const movesLeft = game.lastTurn.roll;
+  const currentCar = game.foCars.find((car) => car.id == game.lastTurn.foCarId);
+  const traverseDirections = [];
+  if (traverse.length > 0) {
+    let previous = currentCar.foPositionId;
+    for (const positionId of traverse) {
+      const p2p = track.foPositions
+        .find((from) => from.id == previous)
+        .foPosition2Positions.find((p2p) => p2p.foPositionToId == positionId);
+      if (p2p.isLeft) {
+        // @todo Use enum and also in the following ifs
+        traverseDirections.push("L");
+      } else if (p2p.isRight) {
+        traverseDirections.push("R");
+      } else if (p2p.isStraight) {
+        traverseDirections.push("S");
+      } else if (p2p.isCurve) {
+        traverseDirections.push("C");
+      } else if (p2p.isPitlaneMove) {
+        traverseDirections.push("P");
+      } else {
+        return false;
+      }
+      previous = positionId;
+    }
+  }
+
+  // @todo Check route is clear - no cars
+  // @todo Check going through curve is correct
+  // @todo Check if overtaking and create traverse with pruned away overtakes
+  // @todo Check that pruned traverse does not contain zig-zagging
+  // @todo Check if any slipstreaming and that it's valid
+  // @todo Check that enough moves, take slipstreaming into account
+  // @todo Calculate damage and return damage
+};
+
 const getMos = (game: fullFormulaGame, track: fullTrack, movesLeft: number) => {
+  // @todo use game.lastTurn.foCarId here for simplicity?
   const currentCar = game.foCars
     .filter((car) => car.order != null)
     .sort((a, b) => a.order - b.order)[0];
@@ -389,4 +431,4 @@ const getAvailableNextP2Ps = (
   return availableNextP2Ps;
 };
 
-export { getMos };
+export { getMos, validateMo };

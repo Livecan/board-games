@@ -38,7 +38,10 @@ import {
   users,
   usersAttributes,
 } from "../../../common/src/models/generated/users";
-import { getMos } from "../../../common/src/models/formula/moveOption";
+import {
+  getMos,
+  validateMo,
+} from "../../../common/src/models/formula/moveOption";
 import { InvalidValueError, PreconditionRequiredError } from "../utils/errors";
 import { fullFormulaGame } from "../../../common/src/models/interfaces/formula";
 
@@ -562,6 +565,18 @@ const getMoveOptions = async ({ gameId }: gameIdParam) => {
   return getMos(fullGame, track, foTurn.roll);
 };
 
+const makeMove = async ({
+  gameId,
+  traverse,
+}: gameIdParam & { traverse: number[] }) => {
+  const game = await getGame({ gameId: gameId });
+  const track = await getTrack({
+    foTrackId: game.foTrackId,
+    include: { foPosition2Position: true },
+  });
+  validateMo(traverse, game, track);
+};
+
 export default {
   add,
   join,
@@ -573,5 +588,6 @@ export default {
   getTrack,
   chooseGear,
   getMoveOptions,
+  makeMove,
 };
 export { gameSetup };
