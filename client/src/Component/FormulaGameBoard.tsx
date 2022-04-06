@@ -61,6 +61,98 @@ const CarSprite = React.forwardRef(
   )
 );
 
+const MoveOptionDamageTable = ({
+  mos,
+  selected,
+  onSelect,
+}: {
+  mos: moveOption[];
+  selected: moveOption;
+  onSelect: (selected: moveOption) => void;
+}) => (
+  <DataGrid
+    autoHeight
+    sx={{ width: 240 }}
+    hideFooter
+    columns={[
+      {
+        field: "selection",
+        headerName: "",
+        flex: 1,
+        renderCell: ({ value: currentMo }: { value: moveOption }) => (
+          <Radio
+            size="small"
+            checked={currentMo == selected}
+            onClick={() => onSelect(currentMo)}
+          />
+        ),
+      },
+      {
+        field: "tires",
+        headerAlign: "center",
+        renderHeader: () => (
+          <Box
+            sx={{
+              display: "block",
+              transform: `rotate(-${Math.PI / 4}rad)`,
+            }}
+          >
+            Tires
+          </Box>
+        ),
+        align: "center",
+        flex: 2,
+      },
+      {
+        field: "brakes",
+        headerAlign: "center",
+        renderHeader: () => (
+          <Box
+            sx={{
+              display: "block",
+              transform: `rotate(-${Math.PI / 4}rad)`,
+            }}
+          >
+            Brakes
+          </Box>
+        ),
+        align: "center",
+        flex: 2,
+      },
+      {
+        field: "shocks",
+        headerAlign: "center",
+        renderHeader: () => (
+          <Box
+            sx={{
+              display: "block",
+              transform: `rotate(-${Math.PI / 4}rad)`,
+            }}
+          >
+            Shocks
+          </Box>
+        ),
+        align: "center",
+        flex: 2,
+      },
+    ].map((column) => ({
+      ...column,
+      disableColumnMenu: true,
+      hideSortIcons: true,
+    }))}
+    rows={mos.map((mo) => ({
+      id: mo.traverse.join("."),
+      selection: mo,
+      tires: mo.foDamages.find((dmg) => dmg.type == damageTypeE.tire)
+        .wearPoints,
+      brakes: mo.foDamages.find((dmg) => dmg.type == damageTypeE.brakes)
+        .wearPoints,
+      shocks: mo.foDamages.find((dmg) => dmg.type == damageTypeE.shocks)
+        .wearPoints,
+    }))}
+  />
+);
+
 const MoveOption = ({
   mos,
   selected,
@@ -86,96 +178,17 @@ const MoveOption = ({
         <Tooltip
           open={isSelected && hasDamaged}
           title={
-            // @todo Move this datagrid into a separate component
-            <DataGrid
-              autoHeight
-              sx={{ width: 240 }}
-              hideFooter
-              columns={[
-                {
-                  field: "selection",
-                  headerName: "",
-                  flex: 1,
-                  renderCell: ({ value: currentMo }: { value: moveOption }) => (
-                    <Radio
-                      size="small"
-                      checked={currentMo == selected}
-                      onClick={() => onSelect(currentMo)}
-                    />
-                  ),
-                },
-                {
-                  field: "tires",
-                  headerAlign: "center",
-                  renderHeader: () => (
-                    <Box
-                      sx={{
-                        display: "block",
-                        transform: `rotate(-${Math.PI / 4}rad)`,
-                      }}
-                    >
-                      Tires
-                    </Box>
-                  ),
-                  align: "center",
-                  flex: 2,
-                },
-                {
-                  field: "brakes",
-                  headerAlign: "center",
-                  renderHeader: () => (
-                    <Box
-                      sx={{
-                        display: "block",
-                        transform: `rotate(-${Math.PI / 4}rad)`,
-                      }}
-                    >
-                      Brakes
-                    </Box>
-                  ),
-                  align: "center",
-                  flex: 2,
-                },
-                {
-                  field: "shocks",
-                  headerAlign: "center",
-                  renderHeader: () => (
-                    <Box
-                      sx={{
-                        display: "block",
-                        transform: `rotate(-${Math.PI / 4}rad)`,
-                      }}
-                    >
-                      Shocks
-                    </Box>
-                  ),
-                  align: "center",
-                  flex: 2,
-                },
-              ].map((column) => ({
-                ...column,
-                disableColumnMenu: true,
-                hideSortIcons: true,
-              }))}
-              rows={mos.map((mo) => ({
-                id: mo.traverse.join("."),
-                selection: mo,
-                tires: mo.foDamages.find((dmg) => dmg.type == damageTypeE.tire)
-                  .wearPoints,
-                brakes: mo.foDamages.find(
-                  (dmg) => dmg.type == damageTypeE.brakes
-                ).wearPoints,
-                shocks: mo.foDamages.find(
-                  (dmg) => dmg.type == damageTypeE.shocks
-                ).wearPoints,
-              }))}
+            <MoveOptionDamageTable
+              mos={mos}
+              selected={selected}
+              onSelect={onSelect}
             />
           }
         >
           <CarSprite
             src={`/resources/formula/move-options/${getMoImageSrc(
               isSelected,
-              // @todo If MO will only contains traverse, will need to calculate the damage, probably do it in useMemo prior to here
+              // @todo If MO will only contains traverse (& movesLeft?), will need to calculate the damage, probably do it in useMemo prior to here
               // If there are multiple MOs selected or if only one selected and it has damage, use damage MO icon
               hasDamaged
             )}`}
