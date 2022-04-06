@@ -3,7 +3,6 @@ import { DataTypes, Model, Optional } from 'sequelize';
 import type { foCurves, foCurvesId } from './foCurves';
 import type { foDamages, foDamagesId } from './foDamages';
 import type { foLogs, foLogsId } from './foLogs';
-import type { foMoveOptions, foMoveOptionsId } from './foMoveOptions';
 import type { foPositions, foPositionsId } from './foPositions';
 import type { foTurns, foTurnsId } from './foTurns';
 import type { games, gamesId } from './games';
@@ -77,18 +76,6 @@ export class foCars extends Model<foCarsAttributes, foCarsCreationAttributes> im
   hasFoLog!: Sequelize.HasManyHasAssociationMixin<foLogs, foLogsId>;
   hasFoLogs!: Sequelize.HasManyHasAssociationsMixin<foLogs, foLogsId>;
   countFoLogs!: Sequelize.HasManyCountAssociationsMixin;
-  // foCars hasMany foMoveOptions via foCarId
-  foMoveOptions!: foMoveOptions[];
-  getFoMoveOptions!: Sequelize.HasManyGetAssociationsMixin<foMoveOptions>;
-  setFoMoveOptions!: Sequelize.HasManySetAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  addFoMoveOption!: Sequelize.HasManyAddAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  addFoMoveOptions!: Sequelize.HasManyAddAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  createFoMoveOption!: Sequelize.HasManyCreateAssociationMixin<foMoveOptions>;
-  removeFoMoveOption!: Sequelize.HasManyRemoveAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  removeFoMoveOptions!: Sequelize.HasManyRemoveAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  hasFoMoveOption!: Sequelize.HasManyHasAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  hasFoMoveOptions!: Sequelize.HasManyHasAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  countFoMoveOptions!: Sequelize.HasManyCountAssociationsMixin;
   // foCars hasMany foTurns via foCarId
   foTurns!: foTurns[];
   getFoTurns!: Sequelize.HasManyGetAssociationsMixin<foTurns>;

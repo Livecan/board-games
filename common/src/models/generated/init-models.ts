@@ -23,16 +23,12 @@ import { foGames as _foGames } from "./foGames";
 import type { foGamesAttributes, foGamesCreationAttributes } from "./foGames";
 import { foLogs as _foLogs } from "./foLogs";
 import type { foLogsAttributes, foLogsCreationAttributes } from "./foLogs";
-import { foMoveOptions as _foMoveOptions } from "./foMoveOptions";
-import type { foMoveOptionsAttributes, foMoveOptionsCreationAttributes } from "./foMoveOptions";
 import { foPosition2Positions as _foPosition2Positions } from "./foPosition2Positions";
 import type { foPosition2PositionsAttributes, foPosition2PositionsCreationAttributes } from "./foPosition2Positions";
 import { foPositions as _foPositions } from "./foPositions";
 import type { foPositionsAttributes, foPositionsCreationAttributes } from "./foPositions";
 import { foTracks as _foTracks } from "./foTracks";
 import type { foTracksAttributes, foTracksCreationAttributes } from "./foTracks";
-import { foTraverses as _foTraverses } from "./foTraverses";
-import type { foTraversesAttributes, foTraversesCreationAttributes } from "./foTraverses";
 import { foTurns as _foTurns } from "./foTurns";
 import type { foTurnsAttributes, foTurnsCreationAttributes } from "./foTurns";
 import { gameStates as _gameStates } from "./gameStates";
@@ -59,11 +55,9 @@ export {
   _foEDamageTypes as foEDamageTypes,
   _foGames as foGames,
   _foLogs as foLogs,
-  _foMoveOptions as foMoveOptions,
   _foPosition2Positions as foPosition2Positions,
   _foPositions as foPositions,
   _foTracks as foTracks,
-  _foTraverses as foTraverses,
   _foTurns as foTurns,
   _gameStates as gameStates,
   _gameTypes as gameTypes,
@@ -97,16 +91,12 @@ export type {
   foGamesCreationAttributes,
   foLogsAttributes,
   foLogsCreationAttributes,
-  foMoveOptionsAttributes,
-  foMoveOptionsCreationAttributes,
   foPosition2PositionsAttributes,
   foPosition2PositionsCreationAttributes,
   foPositionsAttributes,
   foPositionsCreationAttributes,
   foTracksAttributes,
   foTracksCreationAttributes,
-  foTraversesAttributes,
-  foTraversesCreationAttributes,
   foTurnsAttributes,
   foTurnsCreationAttributes,
   gameStatesAttributes,
@@ -134,11 +124,9 @@ export function initModels(sequelize: Sequelize) {
   const foEDamageTypes = _foEDamageTypes.initModel(sequelize);
   const foGames = _foGames.initModel(sequelize);
   const foLogs = _foLogs.initModel(sequelize);
-  const foMoveOptions = _foMoveOptions.initModel(sequelize);
   const foPosition2Positions = _foPosition2Positions.initModel(sequelize);
   const foPositions = _foPositions.initModel(sequelize);
   const foTracks = _foTracks.initModel(sequelize);
-  const foTraverses = _foTraverses.initModel(sequelize);
   const foTurns = _foTurns.initModel(sequelize);
   const gameStates = _gameStates.initModel(sequelize);
   const gameTypes = _gameTypes.initModel(sequelize);
@@ -154,38 +142,26 @@ export function initModels(sequelize: Sequelize) {
   foCars.hasMany(foDamages, { as: "foDamages", foreignKey: "foCarId"});
   foLogs.belongsTo(foCars, { as: "foCar", foreignKey: "foCarId"});
   foCars.hasMany(foLogs, { as: "foLogs", foreignKey: "foCarId"});
-  foMoveOptions.belongsTo(foCars, { as: "foCar", foreignKey: "foCarId"});
-  foCars.hasMany(foMoveOptions, { as: "foMoveOptions", foreignKey: "foCarId"});
   foTurns.belongsTo(foCars, { as: "foCar", foreignKey: "foCarId"});
   foCars.hasMany(foTurns, { as: "foTurns", foreignKey: "foCarId"});
   foCars.belongsTo(foCurves, { as: "foCurve", foreignKey: "foCurveId"});
   foCurves.hasMany(foCars, { as: "foCars", foreignKey: "foCurveId"});
   foCurves.belongsTo(foCurves, { as: "foNextCurve", foreignKey: "foNextCurveId"});
   foCurves.hasMany(foCurves, { as: "foCurves", foreignKey: "foNextCurveId"});
-  foMoveOptions.belongsTo(foCurves, { as: "foCurve", foreignKey: "foCurveId"});
-  foCurves.hasMany(foMoveOptions, { as: "foMoveOptions", foreignKey: "foCurveId"});
   foPositions.belongsTo(foCurves, { as: "foCurve", foreignKey: "foCurveId"});
   foCurves.hasMany(foPositions, { as: "foPositions", foreignKey: "foCurveId"});
   foDamages.belongsTo(foLogs, { as: "foLog", foreignKey: "foLogId"});
   foLogs.hasMany(foDamages, { as: "foDamages", foreignKey: "foLogId"});
-  foDamages.belongsTo(foMoveOptions, { as: "foMoveOption", foreignKey: "foMoveOptionId"});
-  foMoveOptions.hasMany(foDamages, { as: "foDamages", foreignKey: "foMoveOptionId"});
-  foTraverses.belongsTo(foMoveOptions, { as: "foMoveOption", foreignKey: "foMoveOptionId"});
-  foMoveOptions.hasMany(foTraverses, { as: "foTraverses", foreignKey: "foMoveOptionId"});
   foCars.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
   foPositions.hasMany(foCars, { as: "foCars", foreignKey: "foPositionId"});
   foDebris.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
   foPositions.hasMany(foDebris, { as: "foDebris", foreignKey: "foPositionId"});
   foLogs.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
   foPositions.hasMany(foLogs, { as: "foLogs", foreignKey: "foPositionId"});
-  foMoveOptions.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
-  foPositions.hasMany(foMoveOptions, { as: "foMoveOptions", foreignKey: "foPositionId"});
   foPosition2Positions.belongsTo(foPositions, { as: "foPositionFrom", foreignKey: "foPositionFromId"});
   foPositions.hasMany(foPosition2Positions, { as: "foPosition2Positions", foreignKey: "foPositionFromId"});
   foPosition2Positions.belongsTo(foPositions, { as: "foPositionTo", foreignKey: "foPositionToId"});
   foPositions.hasMany(foPosition2Positions, { as: "foPositionToFoPosition2Positions", foreignKey: "foPositionToId"});
-  foTraverses.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
-  foPositions.hasMany(foTraverses, { as: "foTraverses", foreignKey: "foPositionId"});
   foTurns.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
   foPositions.hasMany(foTurns, { as: "foTurns", foreignKey: "foPositionId"});
   foCurves.belongsTo(foTracks, { as: "foTrack", foreignKey: "foTrackId"});
@@ -242,11 +218,9 @@ export function initModels(sequelize: Sequelize) {
     foEDamageTypes: foEDamageTypes,
     foGames: foGames,
     foLogs: foLogs,
-    foMoveOptions: foMoveOptions,
     foPosition2Positions: foPosition2Positions,
     foPositions: foPositions,
     foTracks: foTracks,
-    foTraverses: foTraverses,
     foTurns: foTurns,
     gameStates: gameStates,
     gameTypes: gameTypes,

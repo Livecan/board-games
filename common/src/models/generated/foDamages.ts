@@ -2,12 +2,10 @@ import * as Sequelize from 'sequelize';
 import { DataTypes, Model, Optional } from 'sequelize';
 import type { foCars, foCarsId } from './foCars';
 import type { foLogs, foLogsId } from './foLogs';
-import type { foMoveOptions, foMoveOptionsId } from './foMoveOptions';
 
 export interface foDamagesAttributes {
   id: number;
   foCarId?: number;
-  foMoveOptionId?: number;
   foLogId?: number;
   wearPoints: number;
   type: number;
@@ -17,13 +15,12 @@ export interface foDamagesAttributes {
 
 export type foDamagesPk = "id";
 export type foDamagesId = foDamages[foDamagesPk];
-export type foDamagesOptionalAttributes = "id" | "foCarId" | "foMoveOptionId" | "foLogId" | "created" | "modified";
+export type foDamagesOptionalAttributes = "id" | "foCarId" | "foLogId" | "created" | "modified";
 export type foDamagesCreationAttributes = Optional<foDamagesAttributes, foDamagesOptionalAttributes>;
 
 export class foDamages extends Model<foDamagesAttributes, foDamagesCreationAttributes> implements foDamagesAttributes {
   id!: number;
   foCarId?: number;
-  foMoveOptionId?: number;
   foLogId?: number;
   wearPoints!: number;
   type!: number;
@@ -40,11 +37,6 @@ export class foDamages extends Model<foDamagesAttributes, foDamagesCreationAttri
   getFoLog!: Sequelize.BelongsToGetAssociationMixin<foLogs>;
   setFoLog!: Sequelize.BelongsToSetAssociationMixin<foLogs, foLogsId>;
   createFoLog!: Sequelize.BelongsToCreateAssociationMixin<foLogs>;
-  // foDamages belongsTo foMoveOptions via foMoveOptionId
-  foMoveOption!: foMoveOptions;
-  getFoMoveOption!: Sequelize.BelongsToGetAssociationMixin<foMoveOptions>;
-  setFoMoveOption!: Sequelize.BelongsToSetAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  createFoMoveOption!: Sequelize.BelongsToCreateAssociationMixin<foMoveOptions>;
 
   static initModel(sequelize: Sequelize.Sequelize): typeof foDamages {
     return foDamages.init({
@@ -62,15 +54,6 @@ export class foDamages extends Model<foDamagesAttributes, foDamagesCreationAttri
         key: 'id'
       },
       field: 'fo_car_id'
-    },
-    foMoveOptionId: {
-      type: DataTypes.INTEGER,
-      allowNull: true,
-      references: {
-        model: 'fo_move_options',
-        key: 'id'
-      },
-      field: 'fo_move_option_id'
     },
     foLogId: {
       type: DataTypes.INTEGER,
@@ -119,13 +102,6 @@ export class foDamages extends Model<foDamagesAttributes, foDamagesCreationAttri
         using: "BTREE",
         fields: [
           { name: "fo_car_id" },
-        ]
-      },
-      {
-        name: "fo_move_option_id",
-        using: "BTREE",
-        fields: [
-          { name: "fo_move_option_id" },
         ]
       },
       {

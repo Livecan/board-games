@@ -1,7 +1,6 @@
 import * as Sequelize from 'sequelize';
 import { DataTypes, Model, Optional } from 'sequelize';
 import type { foCars, foCarsId } from './foCars';
-import type { foMoveOptions, foMoveOptionsId } from './foMoveOptions';
 import type { foPositions, foPositionsId } from './foPositions';
 import type { foTracks, foTracksId } from './foTracks';
 
@@ -42,18 +41,6 @@ export class foCurves extends Model<foCurvesAttributes, foCurvesCreationAttribut
   getFoNextCurve!: Sequelize.BelongsToGetAssociationMixin<foCurves>;
   setFoNextCurve!: Sequelize.BelongsToSetAssociationMixin<foCurves, foCurvesId>;
   createFoNextCurve!: Sequelize.BelongsToCreateAssociationMixin<foCurves>;
-  // foCurves hasMany foMoveOptions via foCurveId
-  foMoveOptions!: foMoveOptions[];
-  getFoMoveOptions!: Sequelize.HasManyGetAssociationsMixin<foMoveOptions>;
-  setFoMoveOptions!: Sequelize.HasManySetAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  addFoMoveOption!: Sequelize.HasManyAddAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  addFoMoveOptions!: Sequelize.HasManyAddAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  createFoMoveOption!: Sequelize.HasManyCreateAssociationMixin<foMoveOptions>;
-  removeFoMoveOption!: Sequelize.HasManyRemoveAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  removeFoMoveOptions!: Sequelize.HasManyRemoveAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  hasFoMoveOption!: Sequelize.HasManyHasAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  hasFoMoveOptions!: Sequelize.HasManyHasAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  countFoMoveOptions!: Sequelize.HasManyCountAssociationsMixin;
   // foCurves hasMany foPositions via foCurveId
   foPositions!: foPositions[];
   getFoPositions!: Sequelize.HasManyGetAssociationsMixin<foPositions>;

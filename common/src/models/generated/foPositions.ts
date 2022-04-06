@@ -4,10 +4,8 @@ import type { foCars, foCarsId } from './foCars';
 import type { foCurves, foCurvesId } from './foCurves';
 import type { foDebris, foDebrisId } from './foDebris';
 import type { foLogs, foLogsId } from './foLogs';
-import type { foMoveOptions, foMoveOptionsId } from './foMoveOptions';
 import type { foPosition2Positions, foPosition2PositionsId } from './foPosition2Positions';
 import type { foTracks, foTracksId } from './foTracks';
-import type { foTraverses, foTraversesId } from './foTraverses';
 import type { foTurns, foTurnsId } from './foTurns';
 
 export interface foPositionsAttributes {
@@ -83,18 +81,6 @@ export class foPositions extends Model<foPositionsAttributes, foPositionsCreatio
   hasFoLog!: Sequelize.HasManyHasAssociationMixin<foLogs, foLogsId>;
   hasFoLogs!: Sequelize.HasManyHasAssociationsMixin<foLogs, foLogsId>;
   countFoLogs!: Sequelize.HasManyCountAssociationsMixin;
-  // foPositions hasMany foMoveOptions via foPositionId
-  foMoveOptions!: foMoveOptions[];
-  getFoMoveOptions!: Sequelize.HasManyGetAssociationsMixin<foMoveOptions>;
-  setFoMoveOptions!: Sequelize.HasManySetAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  addFoMoveOption!: Sequelize.HasManyAddAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  addFoMoveOptions!: Sequelize.HasManyAddAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  createFoMoveOption!: Sequelize.HasManyCreateAssociationMixin<foMoveOptions>;
-  removeFoMoveOption!: Sequelize.HasManyRemoveAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  removeFoMoveOptions!: Sequelize.HasManyRemoveAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  hasFoMoveOption!: Sequelize.HasManyHasAssociationMixin<foMoveOptions, foMoveOptionsId>;
-  hasFoMoveOptions!: Sequelize.HasManyHasAssociationsMixin<foMoveOptions, foMoveOptionsId>;
-  countFoMoveOptions!: Sequelize.HasManyCountAssociationsMixin;
   // foPositions hasMany foPosition2Positions via foPositionFromId
   foPosition2Positions!: foPosition2Positions[];
   getFoPosition2Positions!: Sequelize.HasManyGetAssociationsMixin<foPosition2Positions>;
@@ -119,18 +105,6 @@ export class foPositions extends Model<foPositionsAttributes, foPositionsCreatio
   hasFoPositionToFoPosition2Position!: Sequelize.HasManyHasAssociationMixin<foPosition2Positions, foPosition2PositionsId>;
   hasFoPositionToFoPosition2Positions!: Sequelize.HasManyHasAssociationsMixin<foPosition2Positions, foPosition2PositionsId>;
   countFoPositionToFoPosition2Positions!: Sequelize.HasManyCountAssociationsMixin;
-  // foPositions hasMany foTraverses via foPositionId
-  foTraverses!: foTraverses[];
-  getFoTraverses!: Sequelize.HasManyGetAssociationsMixin<foTraverses>;
-  setFoTraverses!: Sequelize.HasManySetAssociationsMixin<foTraverses, foTraversesId>;
-  addFoTraverse!: Sequelize.HasManyAddAssociationMixin<foTraverses, foTraversesId>;
-  addFoTraverses!: Sequelize.HasManyAddAssociationsMixin<foTraverses, foTraversesId>;
-  createFoTraverse!: Sequelize.HasManyCreateAssociationMixin<foTraverses>;
-  removeFoTraverse!: Sequelize.HasManyRemoveAssociationMixin<foTraverses, foTraversesId>;
-  removeFoTraverses!: Sequelize.HasManyRemoveAssociationsMixin<foTraverses, foTraversesId>;
-  hasFoTraverse!: Sequelize.HasManyHasAssociationMixin<foTraverses, foTraversesId>;
-  hasFoTraverses!: Sequelize.HasManyHasAssociationsMixin<foTraverses, foTraversesId>;
-  countFoTraverses!: Sequelize.HasManyCountAssociationsMixin;
   // foPositions hasMany foTurns via foPositionId
   foTurns!: foTurns[];
   getFoTurns!: Sequelize.HasManyGetAssociationsMixin<foTurns>;
