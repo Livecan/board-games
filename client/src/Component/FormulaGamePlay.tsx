@@ -68,6 +68,7 @@ const FormulaGamePlay = ({
             <Stack direction="row">
               {car.foDamages.map((damage) => (
                 <TextField
+                  key={damage.type}
                   // @todo This much styling here in code looks like an antipattern and might clash with other styling, think of some single source of truth
                   inputProps={{
                     style: {

@@ -1,12 +1,15 @@
 import {
   Box,
   ClickAwayListener,
+  Radio,
   SxProps,
   Theme,
   Tooltip,
   useMediaQuery,
 } from "@mui/material";
+import { DataGrid } from "@mui/x-data-grid";
 import React, { useEffect, useMemo, useState } from "react";
+import { damageTypeEnum as damageTypeE } from "../../../common/src/models/enums/formula";
 import { foPositionsAttributes } from "../../../common/src/models/generated/foPositions";
 import {
   fullFormulaGame,
@@ -80,7 +83,95 @@ const MoveOption = ({
     <ClickAwayListener onClickAway={() => onUnselect()}>
       {/* The div helps handling ClickAwayListener properly, otherwise clicking the tootlip would trigger onClickAway */}
       <div>
-        <Tooltip open={isSelected && hasDamaged} title="Damage table!">
+        <Tooltip
+          open={isSelected && hasDamaged}
+          title={
+            // @todo Move this datagrid into a separate component
+            <DataGrid
+              autoHeight
+              sx={{ width: 240 }}
+              hideFooter
+              columns={[
+                {
+                  field: "selection",
+                  headerName: "",
+                  flex: 1,
+                  renderCell: ({ value: currentMo }: { value: moveOption }) => (
+                    <Radio
+                      size="small"
+                      checked={currentMo == selected}
+                      onClick={() => onSelect(currentMo)}
+                    />
+                  ),
+                },
+                {
+                  field: "tires",
+                  headerAlign: "center",
+                  renderHeader: () => (
+                    <Box
+                      sx={{
+                        display: "block",
+                        transform: `rotate(-${Math.PI / 4}rad)`,
+                      }}
+                    >
+                      Tires
+                    </Box>
+                  ),
+                  align: "center",
+                  flex: 2,
+                },
+                {
+                  field: "brakes",
+                  headerAlign: "center",
+                  renderHeader: () => (
+                    <Box
+                      sx={{
+                        display: "block",
+                        transform: `rotate(-${Math.PI / 4}rad)`,
+                      }}
+                    >
+                      Brakes
+                    </Box>
+                  ),
+                  align: "center",
+                  flex: 2,
+                },
+                {
+                  field: "shocks",
+                  headerAlign: "center",
+                  renderHeader: () => (
+                    <Box
+                      sx={{
+                        display: "block",
+                        transform: `rotate(-${Math.PI / 4}rad)`,
+                      }}
+                    >
+                      Shocks
+                    </Box>
+                  ),
+                  align: "center",
+                  flex: 2,
+                },
+              ].map((column) => ({
+                ...column,
+                disableColumnMenu: true,
+                hideSortIcons: true,
+              }))}
+              rows={mos.map((mo) => ({
+                id: mo.traverse.join("."),
+                selection: mo,
+                tires: mo.foDamages.find((dmg) => dmg.type == damageTypeE.tire)
+                  .wearPoints,
+                brakes: mo.foDamages.find(
+                  (dmg) => dmg.type == damageTypeE.brakes
+                ).wearPoints,
+                shocks: mo.foDamages.find(
+                  (dmg) => dmg.type == damageTypeE.shocks
+                ).wearPoints,
+              }))}
+            />
+          }
+        >
           <CarSprite
             src={`/resources/formula/move-options/${getMoImageSrc(
               isSelected,
@@ -174,6 +265,7 @@ const FormulaGameBoard = ({
             // If a MO is selected, display only it, otherwise display all
             (selected == null || selected.foPositionId == positionId) && (
               <MoveOption
+                key={positionId}
                 mos={mos}
                 position={track.foPositions.find((pos) => pos.id == positionId)}
                 selected={selected}
