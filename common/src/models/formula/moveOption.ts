@@ -339,7 +339,7 @@ const validateMo = (
   // Add the suspension damage based on passed debris - this damage will be
   // determined by a dice roll
   for (const debris of game.foDebris) {
-    if (traverse.some((positionId) => positionId == debris.foPositionId)) {
+    if (traverse.includes(debris.foPositionId)) {
       damages.suspension++;
     }
   }
@@ -362,9 +362,7 @@ const validateMo = (
       .map((p2p) => p2p.foPositionFromId),
   ];
   for (const car of game.foCars) {
-    if (
-      adjacentPositionIds.some((positionId) => positionId == car.foPositionId)
-    ) {
+    if (adjacentPositionIds.includes(car.foPositionId)) {
       damages.chassis++;
     }
   }
