@@ -1,3 +1,4 @@
+import finiteStateMachine from "../../../utils/finiteStateMachine";
 import { damageTypeEnum as damageTypeE } from "../enums/formula";
 import { foDamagesCreationAttributes } from "../generated/foDamages";
 import {
@@ -83,6 +84,68 @@ class Mo {
   }
 }
 
+type MovementState =
+  | "START"
+  | "1_STOP"
+  | "2_STOP"
+  | "LEFTY"
+  | "RIGHTY"
+  | "STRAIGHT"
+  | "OVERSHOOT"
+  | "OVERTAKE"
+  | "OVERTAKE_1"
+  | "OVERTAKE_L"
+  | "OVERTAKE_R"
+  | "ONE_MORE_DIRECTION";
+
+type MovementTransition = "S" | "L" | "R" | "C0" | "C1" | "C2" | "O";
+
+const movementStateMachineRules: [
+  MovementState,
+  MovementTransition,
+  MovementState
+][] = [
+  ["START", "S", "START"],
+  ["START", "C1", "1_STOP"],
+  ["START", "C2", "2_STOP"],
+  ["START", "L", "LEFTY"],
+  ["START", "R", "RIGHTY"],
+  ["START", "O", "OVERSHOOT"],
+  ["1_STOP", "C1", "1_STOP"],
+  ["1_STOP", "S", "OVERSHOOT"],
+  ["2_STOP", "C2", "2_STOP"],
+  ["LEFTY", "S", "LEFTY"],
+  ["LEFTY", "C1", "1_STOP"],
+  ["LEFTY", "C2", "2_STOP"],
+  ["LEFTY", "L", "STRAIGHT"],
+  ["LEFTY", "O", "OVERTAKE_1"],
+  ["RIGHTY", "S", "RIGHTY"],
+  ["RIGHTY", "C1", "1_STOP"],
+  ["RIGHTY", "C2", "2_STOP"],
+  ["RIGHTY", "R", "STRAIGHT"],
+  ["RIGHTY", "O", "OVERTAKE_1"],
+  ["OVERSHOOT", "S", "OVERSHOOT"],
+  ["OVERSHOOT", "C1", "2_STOP"],
+  ["OVERSHOOT", "C2", "2_STOP"],
+  ["STRAIGHT", "S", "STRAIGHT"],
+  ["STRAIGHT", "C1", "1_STOP"],
+  ["STRAIGHT", "C2", "2_STOP"],
+  ["OVERTAKE_1", "L", "STRAIGHT"],
+  ["OVERTAKE_1", "R", "STRAIGHT"],
+  ["OVERTAKE", "L", "OVERTAKE_L"],
+  ["OVERTAKE", "R", "OVERTAKE_R"],
+  ["OVERTAKE_L", "L", "STRAIGHT"],
+  ["OVERTAKE_L", "S", "ONE_MORE_DIRECTION"],
+  ["OVERTAKE_R", "R", "STRAIGHT"],
+  ["OVERTAKE_R", "S", "ONE_MORE_DIRECTION"],
+  ["ONE_MORE_DIRECTION", "S", "ONE_MORE_DIRECTION"],
+  ["ONE_MORE_DIRECTION", "L", "STRAIGHT"],
+  ["ONE_MORE_DIRECTION", "R", "STRAIGHT"],
+  ["ONE_MORE_DIRECTION", "O", "OVERTAKE_1"],
+  ["ONE_MORE_DIRECTION", "C1", "1_STOP"],
+  ["ONE_MORE_DIRECTION", "C2", "2_STOP"],
+];
+
 const validateMo = (
   traverse: number[],
   game: fullFormulaGame,
@@ -90,38 +153,222 @@ const validateMo = (
 ) => {
   const movesLeft = game.lastTurn.roll;
   const currentCar = game.foCars.find((car) => car.id == game.lastTurn.foCarId);
-  const traverseDirections = [];
+
+  const traversePositions = traverse.map((positionId) =>
+    track.foPositions.find((pos) => pos.id == positionId)
+  );
+
+  const traverseDirections: MovementTransition[] = [];
+  // Check that the traverse route exists and create traverse directions for
+  // the state machine
   if (traverse.length > 0) {
-    let previous = currentCar.foPositionId;
-    for (const positionId of traverse) {
+    let previousPos = track.foPositions.find(
+      (pos) => pos.id == currentCar.foPositionId
+    );
+    for (const position of traversePositions) {
+      // Getting a p2p entry to figure out what sort of movement the car is doing
       const p2p = track.foPositions
-        .find((from) => from.id == previous)
-        .foPosition2Positions.find((p2p) => p2p.foPositionToId == positionId);
-      if (p2p.isLeft) {
-        // @todo Use enum and also in the following ifs
+        .find((from) => from.id == previousPos.id)
+        .foPosition2Positions.find((p2p) => p2p.foPositionToId == position.id);
+
+      // If a car is in front of this position, can overtake
+      const canOvertake = game.foCars.some(
+        (car) =>
+          car.foPositionId ==
+          track.foPositions
+            .find((pos) => pos.id == position.id)
+            .foPosition2Positions.find((p2p) => p2p.isStraight)?.foPositionToId
+      );
+
+      if (canOvertake) {
+        traverseDirections.push("O");
+      }
+
+      // Entering a corner
+      if (previousPos.foCurveId == null && position.foCurveId != null) {
+        traverseDirections.push(p2p.isLeft ? "L" : p2p.isStraight ? "S" : "R");
+        traverseDirections.push(
+          track.foCurves.find((curve) => curve.id == position.foCurveId)
+            .stops == 1
+            ? "C1"
+            : "C2"
+        );
+        // Moving thru the initial corner & no stops left
+      } else if (
+        currentCar.foCurveId != null &&
+        currentCar.foCurveId == position.foCurveId &&
+        track.foCurves.find((curve) => curve.id == currentCar.foCurveId)
+          .stops <= currentCar.stops
+      ) {
+        traverseDirections.push("S");
+        // Leaving a corner
+      } else if (previousPos.foCurveId != null && position.foCurveId == null) {
+        traverseDirections.push("S");
+        // Staying in the corner
+      } else if (previousPos.foCurveId != null && position.foCurveId != null) {
+        traverseDirections.push(
+          traverseDirections[traverseDirections.length - 1]
+        );
+      } else if (p2p.isLeft) {
         traverseDirections.push("L");
       } else if (p2p.isRight) {
         traverseDirections.push("R");
       } else if (p2p.isStraight) {
         traverseDirections.push("S");
-      } else if (p2p.isCurve) {
-        traverseDirections.push("C");
-      } else if (p2p.isPitlaneMove) {
-        traverseDirections.push("P");
       } else {
+        // @todo For practise purposes, this should check that new features are
+        // sanitized and data is consistent
+        throw new Error(
+          "Unreachable condition hit #0000 - inconsistent data or new features not implemented,"
+        );
+      }
+
+      previousPos = position;
+    }
+
+    // Check slipstreaming is correct if the car needs to slipstream here
+    for (
+      let slipstreamCount = 0;
+      movesLeft < traverse.length + slipstreamCount * 3;
+      slipstreamCount++
+    ) {
+      const isCarInFront = game.foCars.some(
+        (car) =>
+          car.foPositionId ==
+          track.foPositions
+            .find(
+              (pos) => pos.id == traverse[movesLeft + slipstreamCount * 3 - 1]
+            )
+            .foPosition2Positions.find((p2p) => p2p.isStraight)?.foPositionToId
+      );
+      if (!isCarInFront) {
         return false;
       }
-      previous = positionId;
+    }
+
+    // Run the state machine to check that the maneuvre is ok
+    const movementCheckMachine = finiteStateMachine(
+      "START",
+      movementStateMachineRules
+    );
+    for (const movementTransition of traverseDirections) {
+      if (movementCheckMachine.dispatch(movementTransition) == null) {
+        console.log(movementCheckMachine.getState());
+        return false;
+      }
     }
   }
 
-  // @todo Check route is clear - no cars
-  // @todo Check going through curve is correct
-  // @todo Check if overtaking and create traverse with pruned away overtakes
-  // @todo Check that pruned traverse does not contain zig-zagging
-  // @todo Check if any slipstreaming and that it's valid
-  // @todo Check that enough moves, take slipstreaming into account
-  // @todo Calculate damage and return damage
+  const damages = {
+    tire: 0,
+    brake: 0,
+    suspension: 0,
+    chassis: 0,
+  };
+
+  // Checking if not braking too much
+  if (movesLeft - traverse.length > 6) {
+    console.log("Too much breaking");
+    return false;
+  }
+
+  // Checking braking damage
+  if (traverse.length < movesLeft) {
+    damages.brake += Math.min(movesLeft - traverse.length, 3);
+    damages.tire += Math.max(movesLeft - traverse.length - 3, 0);
+  } else if (traverse.length < movesLeft) {
+    // Checking braking while slipstreaming
+    damages.brake += (3 - ((traverse.length - movesLeft) % 3)) % 3;
+    // Checking if damage from slipstreaming into a corner
+    const enteredCurveInSlipstream = traversePositions
+      .slice(movesLeft)
+      .some((pos) => pos.foCurveId != null);
+    if (enteredCurveInSlipstream) {
+      damages.brake++;
+    }
+  }
+
+  // Checking tire damage for corner overshooting
+  // Needs to find the first corner where the car still has at least one stop
+  // left
+  const firstCurveId = traversePositions.find(
+    (position) =>
+      position.foCurveId != null &&
+      (position.foCurveId != currentCar.foCurveId ||
+        (position.foCurveId == currentCar.foCurveId &&
+          track.foCurves.find((curve) => curve.id == position.foCurveId).stops -
+            currentCar.stops >
+            0))
+  )?.foCurveId;
+  // If the route contains a corner where the car could overshoot, needs to add
+  // the overshooting tire damage
+  if (firstCurveId != null) {
+    // Getting the last index of the overshooting corner position in traverse
+    let lastIndex = traverse.length - 1;
+    while (traversePositions[lastIndex].foCurveId != firstCurveId) {
+      lastIndex--;
+    }
+    // Needs to add number of moves left in the traverse after leaving the
+    // corner and add them to the tire damage
+    damages.tire += traverse.length - lastIndex - 1;
+  }
+
+  // After dealing the tire damage, the car cannot go under 0 wear points;
+  // 0 means the car flips and needs to continue in the first gear
+  if (
+    currentCar.foDamages.find((dmg) => dmg.type == damageTypeE.tire)
+      .wearPoints -
+      damages.tire <
+    0
+  ) {
+    console.log("Too much tire damage");
+    return false;
+  }
+
+  // After dealing the brake damage, the car cannot go under 1 wear point.
+  if (
+    currentCar.foDamages.find((dmg) => dmg.type == damageTypeE.brakes)
+      .wearPoints -
+      damages.brake <
+    1
+  ) {
+    console.log("Too much brake damage");
+    return false;
+  }
+
+  // Add the suspension damage based on passed debris - this damage will be
+  // determined by a dice roll
+  for (const debris of game.foDebris) {
+    if (traverse.some((positionId) => positionId == debris.foPositionId)) {
+      damages.suspension++;
+    }
+  }
+
+  // Figure out potential collision damage to chassis - needs to get number of
+  // cars on the adjacents positions (adjacentPositionIds) to the final
+  // position (finalPositionId)
+  const finalPositionId =
+    traverse.length > 0
+      ? traverse[traverse.length - 1]
+      : currentCar.foPositionId;
+  const adjacentPositionIds = [
+    ...track.foPositions
+      .find((pos) => pos.id == finalPositionId)
+      .foPosition2Positions.filter((p2p) => p2p.isAdjacent)
+      .map((p2p) => p2p.foPositionToId),
+    ...track.foPositions
+      .find((pos) => pos.id == finalPositionId)
+      .foPositionToFoPosition2Positions.filter((p2p) => p2p.isAdjacent)
+      .map((p2p) => p2p.foPositionFromId),
+  ];
+  for (const car of game.foCars) {
+    if (
+      adjacentPositionIds.some((positionId) => positionId == car.foPositionId)
+    ) {
+      damages.chassis++;
+    }
+  }
+  return damages;
 };
 
 const getMos = (game: fullFormulaGame, track: fullTrack, movesLeft: number) => {
