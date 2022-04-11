@@ -105,6 +105,9 @@ const movementStateMachineRules: [
   MovementTransition,
   MovementState
 ][] = [
+  // The rules assume that the route is clear - i.e. if the car would have
+  // straight direction behind another car, this would have been caught
+  // earlier already.
   ["START", "S", "START"],
   ["START", "C1", "1_STOP"],
   ["START", "C2", "2_STOP"],
@@ -118,12 +121,16 @@ const movementStateMachineRules: [
   ["LEFTY", "C1", "1_STOP"],
   ["LEFTY", "C2", "2_STOP"],
   ["LEFTY", "L", "STRAIGHT"],
-  ["LEFTY", "O", "OVERTAKE_1"],
+  // This rule is to avoid a car going into an overtaking position and
+  // returning into a lane to make shorter move on a straight
+  ["LEFTY", "O", "OVERTAKE_L"],
   ["RIGHTY", "S", "RIGHTY"],
   ["RIGHTY", "C1", "1_STOP"],
   ["RIGHTY", "C2", "2_STOP"],
   ["RIGHTY", "R", "STRAIGHT"],
-  ["RIGHTY", "O", "OVERTAKE_1"],
+  // This rule is to avoid a car going into an overtaking position and
+  // returning into a lane to make shorter move on a straight
+  ["RIGHTY", "O", "OVERTAKE_R"],
   ["OVERSHOOT", "S", "OVERSHOOT"],
   ["OVERSHOOT", "C1", "2_STOP"],
   ["OVERSHOOT", "C2", "2_STOP"],
@@ -219,7 +226,7 @@ const validateMo = (
         // @todo For practise purposes, this should check that new features are
         // sanitized and data is consistent
         throw new Error(
-          "Unreachable condition hit #0000 - inconsistent data or new features not implemented,"
+          "Unreachable condition hit - inconsistent data or new features not implemented,"
         );
       }
 
