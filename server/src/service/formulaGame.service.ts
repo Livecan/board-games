@@ -343,7 +343,7 @@ interface foTrackIdParam {
 
 const getTrack = async (
   params: (gameIdParam | foTrackIdParam) & {
-    include?: { foPosition2Position?: boolean };
+    include?: { foPosition2Position?: boolean, foPositionToFoPosition2Positions?: boolean };
   }
 ) => {
   let foTrackId;
@@ -362,16 +362,16 @@ const getTrack = async (
       {
         model: foPositions,
         as: "foPositions",
-        ...(params?.include?.foPosition2Position
-          ? {
-              include: [
-                {
-                  model: foPosition2Positions,
-                  as: "foPosition2Positions",
-                },
-              ],
-            }
-          : {}),
+        include: [
+          params?.include?.foPosition2Position && {
+            model: foPosition2Positions,
+            as: "foPosition2Positions",
+          },
+          params?.include?.foPositionToFoPosition2Positions && {
+            model: foPosition2Positions,
+            as: "foPositionToFoPosition2Positions",
+          },
+        ].filter(model => model),
       },
       { model: foCurves, as: "foCurves" },
     ],
@@ -572,7 +572,7 @@ const makeMove = async ({
   const game = await getGame({ gameId: gameId });
   const track = await getTrack({
     foTrackId: game.foTrackId,
-    include: { foPosition2Position: true },
+    include: { foPosition2Position: true, foPositionToFoPosition2Positions: true },
   });
   validateMo(traverse, game, track);
 };
