@@ -311,9 +311,8 @@ const FormulaGameBoard = ({
                 onSelect={setSelected}
                 onDeselect={() => setSelected(null)}
                 // @todo Consider how to do these callbacks. There is a bit of props drilling, but it might make sense here
-                onConfirm={(mo: moveOption) =>
-                  console.log(`selected: [${mo.traverse.join(" ")}]`)
-                }
+                // @todo Consider refactoring the MO object, it only needs traverse info, the moves left can be pulled from the lastMove on game object
+                onConfirm={onSelectMO}
               />
             )
         )}

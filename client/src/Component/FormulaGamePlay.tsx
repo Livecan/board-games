@@ -4,6 +4,7 @@ import React, { useContext, useEffect, useState } from "react";
 import {
   fullFormulaGame,
   fullTrack,
+  moveOption,
 } from "../../../common/src/models/interfaces/formula";
 import commonConfig from "../../../common/src/config/config";
 import LoginContext from "../Context/LoginContext";
@@ -33,9 +34,25 @@ const FormulaTrackPanel = ({ game }: { game: fullFormulaGame }) => {
     }
   }, [game.foCars]);
 
+  const selectMo = (moveOption: moveOption) => {
+    const nextCar = game.foCars.find((car) => car.id == game.lastTurn.foCarId);
+    axios.post(
+      `/${commonConfig.apiBaseUrl}formula/${game.id}/car/${nextCar.id}/position`,
+      // @todo Change MOs - remove the original car position from MOs when they come from server already and then no need to use filter here
+      moveOption.traverse.filter(
+        (positionId) => positionId != nextCar.foPositionId
+      )
+    );
+  };
+
   return (
     track != null && (
-      <FormulaGameBoard game={game} track={track} availableMOs={availableMOs} />
+      <FormulaGameBoard
+        game={game}
+        track={track}
+        availableMOs={availableMOs}
+        onSelectMO={selectMo}
+      />
     )
   );
 };
