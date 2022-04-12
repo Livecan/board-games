@@ -1,5 +1,6 @@
 import {
   Box,
+  Button,
   ClickAwayListener,
   Radio,
   SxProps,
@@ -7,7 +8,7 @@ import {
   Tooltip,
   useMediaQuery,
 } from "@mui/material";
-import { DataGrid } from "@mui/x-data-grid";
+import { DataGrid, GridColumns } from "@mui/x-data-grid";
 import React, { useEffect, useMemo, useState } from "react";
 import { damageTypeEnum as damageTypeE } from "../../../common/src/models/enums/formula";
 import { foPositionsAttributes } from "../../../common/src/models/generated/foPositions";
@@ -61,96 +62,117 @@ const CarSprite = React.forwardRef(
   )
 );
 
+const moveOptionDamageTableColumnDefinition: GridColumns = [
+  {
+    field: "selection",
+    headerName: "",
+    flex: 1,
+    renderCell: ({
+      value,
+    }: {
+      value: { isSelected: boolean; onClick: () => void };
+    }) => (
+      <Radio size="small" checked={value.isSelected} onClick={value.onClick} />
+    ),
+  },
+  {
+    field: "tires",
+    headerAlign: "center",
+    renderHeader: () => (
+      <Box
+        sx={{
+          display: "block",
+          transform: `rotate(-${Math.PI / 4}rad)`,
+        }}
+      >
+        Tires
+      </Box>
+    ),
+    align: "center",
+    flex: 2,
+  },
+  {
+    field: "brakes",
+    headerAlign: "center",
+    renderHeader: () => (
+      <Box
+        sx={{
+          display: "block",
+          transform: `rotate(-${Math.PI / 4}rad)`,
+        }}
+      >
+        Brakes
+      </Box>
+    ),
+    align: "center",
+    flex: 2,
+  },
+  {
+    field: "shocks",
+    headerAlign: "center",
+    renderHeader: () => (
+      <Box
+        sx={{
+          display: "block",
+          transform: `rotate(-${Math.PI / 4}rad)`,
+        }}
+      >
+        Shocks
+      </Box>
+    ),
+    align: "center",
+    flex: 2,
+  },
+].map((column) => ({
+  ...column,
+  disableColumnMenu: true,
+  hideSortIcons: true,
+})) as GridColumns;
+
 const MoveOptionDamageTable = ({
   mos,
   selected,
   onSelect,
+  onDeselect,
+  onConfirm,
 }: {
   mos: moveOption[];
   selected: moveOption;
   onSelect: (selected: moveOption) => void;
+  onDeselect?: () => void;
+  onConfirm: (selected: moveOption) => void;
 }) => (
-  <DataGrid
-    autoHeight
-    sx={{ width: 240 }}
-    hideFooter
-    columns={[
-      {
-        field: "selection",
-        headerName: "",
-        flex: 1,
-        renderCell: ({ value: currentMo }: { value: moveOption }) => (
-          <Radio
-            size="small"
-            checked={currentMo == selected}
-            onClick={() => onSelect(currentMo)}
-          />
-        ),
-      },
-      {
-        field: "tires",
-        headerAlign: "center",
-        renderHeader: () => (
-          <Box
-            sx={{
-              display: "block",
-              transform: `rotate(-${Math.PI / 4}rad)`,
-            }}
-          >
-            Tires
-          </Box>
-        ),
-        align: "center",
-        flex: 2,
-      },
-      {
-        field: "brakes",
-        headerAlign: "center",
-        renderHeader: () => (
-          <Box
-            sx={{
-              display: "block",
-              transform: `rotate(-${Math.PI / 4}rad)`,
-            }}
-          >
-            Brakes
-          </Box>
-        ),
-        align: "center",
-        flex: 2,
-      },
-      {
-        field: "shocks",
-        headerAlign: "center",
-        renderHeader: () => (
-          <Box
-            sx={{
-              display: "block",
-              transform: `rotate(-${Math.PI / 4}rad)`,
-            }}
-          >
-            Shocks
-          </Box>
-        ),
-        align: "center",
-        flex: 2,
-      },
-    ].map((column) => ({
-      ...column,
-      disableColumnMenu: true,
-      hideSortIcons: true,
-    }))}
-    rows={mos.map((mo) => ({
-      id: mo.traverse.join("."),
-      selection: mo,
-      tires: mo.foDamages.find((dmg) => dmg.type == damageTypeE.tire)
-        .wearPoints,
-      brakes: mo.foDamages.find((dmg) => dmg.type == damageTypeE.brakes)
-        .wearPoints,
-      shocks: mo.foDamages.find((dmg) => dmg.type == damageTypeE.shocks)
-        .wearPoints,
-    }))}
-  />
+  <Box>
+    <DataGrid
+      autoHeight
+      sx={{ width: 240 }}
+      hideFooter
+      columns={moveOptionDamageTableColumnDefinition}
+      rows={mos.map((mo) => ({
+        id: mo.traverse.join("."),
+        selection: { isSelected: mo === selected, onClick: () => onSelect(mo) },
+        tires: mo.foDamages.find((dmg) => dmg.type == damageTypeE.tire)
+          .wearPoints,
+        brakes: mo.foDamages.find((dmg) => dmg.type == damageTypeE.brakes)
+          .wearPoints,
+        shocks: mo.foDamages.find((dmg) => dmg.type == damageTypeE.shocks)
+          .wearPoints,
+      }))}
+    />
+    {/* @todo Consider what to do about this styling here. It's a very specific component, so maybe ok */}
+    <Box sx={{ display: "flex" }}>
+      <Button
+        sx={{ flexBasis: 1, flexGrow: 1 }}
+        // @todo Consider if this Component should not rather receive a callback without parameter
+        onClick={() => onConfirm(selected)}
+      >
+        OK
+      </Button>
+      <Button sx={{ flexBasis: 1, flexGrow: 1 }} onClick={onDeselect}>
+        Cancel
+      </Button>
+    </Box>
+  </Box>
 );
 
 const MoveOption = ({
@@ -158,13 +180,15 @@ const MoveOption = ({
   selected,
   position,
   onSelect,
-  onUnselect,
+  onDeselect,
+  onConfirm,
 }: {
   mos: moveOption[];
   selected: moveOption | null;
   position: foPositionsAttributes;
   onSelect: (selected: moveOption) => void;
-  onUnselect: () => void;
+  onDeselect: () => void;
+  onConfirm: (selected: moveOption) => void;
 }) => {
   const hasDamaged = useMemo(
     () => mos[0].foDamages.some((dmg) => dmg.wearPoints > 0),
@@ -172,16 +196,19 @@ const MoveOption = ({
   );
   const isSelected = selected?.foPositionId == position.id;
   return (
-    <ClickAwayListener onClickAway={() => onUnselect()}>
+    <ClickAwayListener onClickAway={() => onDeselect()}>
       {/* The div helps handling ClickAwayListener properly, otherwise clicking the tootlip would trigger onClickAway */}
       <div>
         <Tooltip
+          // @todo How to confirm selection if no damage MOs? Consider either rendering the damage table anyway, but only having the buttons or double click (but double click could happen by mistake)
           open={isSelected && hasDamaged}
           title={
             <MoveOptionDamageTable
               mos={mos}
               selected={selected}
               onSelect={onSelect}
+              onDeselect={onDeselect}
+              onConfirm={onConfirm}
             />
           }
         >
@@ -202,7 +229,6 @@ const MoveOption = ({
   );
 };
 
-// @todo Create TS interface for MO
 const FormulaGameBoard = ({
   game,
   track,
@@ -283,7 +309,11 @@ const FormulaGameBoard = ({
                 position={track.foPositions.find((pos) => pos.id == positionId)}
                 selected={selected}
                 onSelect={setSelected}
-                onUnselect={() => setSelected(null)}
+                onDeselect={() => setSelected(null)}
+                // @todo Consider how to do these callbacks. There is a bit of props drilling, but it might make sense here
+                onConfirm={(mo: moveOption) =>
+                  console.log(`selected: [${mo.traverse.join(" ")}]`)
+                }
               />
             )
         )}
