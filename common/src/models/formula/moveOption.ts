@@ -368,7 +368,7 @@ const validateMo = (
       .foPositionToFoPosition2Positions.filter((p2p) => p2p.isAdjacent)
       .map((p2p) => p2p.foPositionFromId),
   ];
-  for (const car of game.foCars) {
+  for (const car of game.foCars.filter(car => car.id != currentCar.id)) {
     if (adjacentPositionIds.includes(car.foPositionId)) {
       damages.chassis++;
     }
