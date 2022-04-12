@@ -8,7 +8,9 @@ import {
   gamesUsersReadyStateEnum as readyStateE,
 } from "../../../common/src/models/enums/game";
 import {
+  isCollision,
   isFastStart,
+  isShocksDamage,
   isSlowStart,
   rollBlackDice,
   rollGearDice,
@@ -343,7 +345,10 @@ interface foTrackIdParam {
 
 const getTrack = async (
   params: (gameIdParam | foTrackIdParam) & {
-    include?: { foPosition2Position?: boolean, foPositionToFoPosition2Positions?: boolean };
+    include?: {
+      foPosition2Position?: boolean;
+      foPositionToFoPosition2Positions?: boolean;
+    };
   }
 ) => {
   let foTrackId;
@@ -371,7 +376,8 @@ const getTrack = async (
             model: foPosition2Positions,
             as: "foPositionToFoPosition2Positions",
           },
-        ].filter(model => model),
+        // This filters out null models, which would otherwise be invalid
+        ].filter((model) => model),
       },
       { model: foCurves, as: "foCurves" },
     ],
@@ -567,14 +573,103 @@ const getMoveOptions = async ({ gameId }: gameIdParam) => {
 
 const makeMove = async ({
   gameId,
+  carId,
   traverse,
-}: gameIdParam & { traverse: number[] }) => {
+}: gameIdParam & { carId: number; traverse: number[] }) => {
   const game = await getGame({ gameId: gameId });
   const track = await getTrack({
     foTrackId: game.foTrackId,
-    include: { foPosition2Position: true, foPositionToFoPosition2Positions: true },
+    include: {
+      foPosition2Position: true,
+      foPositionToFoPosition2Positions: true,
+    },
   });
-  validateMo(traverse, game, track);
+  // @todo Introduce interface
+  let damages:
+    | false
+    | {
+        tire: number;
+        brake: number;
+        shocks: number;
+        chassis: any[];
+      };
+  // @todo Get next lap info from validateMo as well and make sure that last move is calculated correctly
+  if ((damages = validateMo(traverse, game, track))) {
+    const car = await foCars.findByPk(carId, {
+      include: { model: foDamages, as: "foDamages" },
+    });
+    const finalPositionId =
+      traverse.length > 0 ? traverse[traverse.length - 1] : car.foPositionId;
+    car.foPositionId = finalPositionId;
+
+    const tireDamage = car.foDamages.find(
+      (tireDmg) => tireDmg.type == damageTypeE.tire
+    );
+    tireDamage.wearPoints -= damages.tire;
+
+    const brakeDamage = car.foDamages.find(
+      (brakeDmg) => brakeDmg.type == damageTypeE.brakes
+    );
+    brakeDamage.wearPoints -= damages.brake;
+
+    const shocksDamage = car.foDamages.find(
+      (shocksDmg) => shocksDmg.type == damageTypeE.shocks
+    );
+    for (
+      let shocksDamagePotential = damages.shocks;
+      shocksDamagePotential > 0;
+      shocksDamagePotential--
+    ) {
+      if (isShocksDamage()) {
+        shocksDamage.wearPoints--;
+      }
+    }
+
+    const chassisDamage = car.foDamages.find(
+      (chassisDmg) => chassisDmg.type == damageTypeE.chassis
+    );
+    const otherChassisDamages: foDamages[] = [];
+    const otherRetiredCarsToSave: foCars[] = [];
+    for (const otherCarId of damages.chassis) {
+      if (isCollision()) {
+        chassisDamage.wearPoints--;
+      }
+      if (isCollision()) {
+        const otherCarDamage = await foDamages.findOne({
+          where: { foCarId: otherCarId, type: damageTypeE.chassis },
+        });
+        otherCarDamage.wearPoints--;
+        otherChassisDamages.push(otherCarDamage);
+        if (otherCarDamage.wearPoints <= 0) {
+          const otherRetiredCar = await foCars.findByPk(otherCarId);
+          otherRetiredCar.state = carStateE.retired;
+          otherRetiredCarsToSave.push(otherRetiredCar);
+        }
+      }
+    }
+
+    if (shocksDamage.wearPoints <= 0 || chassisDamage.wearPoints <= 0) {
+      car.state = carStateE.retired;
+    }
+
+    const turn = await foTurns.findByPk(game.lastTurn.id);
+    turn.foPositionId = finalPositionId;
+
+    await Promise.all([
+      car.save(),
+      tireDamage.save(),
+      brakeDamage.save(),
+      shocksDamage.save(),
+      chassisDamage.save(),
+      ...otherChassisDamages.map((dmg) => dmg.save()),
+      ...otherRetiredCarsToSave.map((car) => car.save()),
+      turn.save(),
+    ]);
+
+    await processAutomaticActions({ gameId: gameId });
+  } else {
+    throw new InvalidValueError("Invalid traverse value");
+  }
 };
 
 export default {

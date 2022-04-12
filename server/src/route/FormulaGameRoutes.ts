@@ -321,13 +321,24 @@ const GetMoveOptions = router.get("/:gameId/car/:foCarId/moveOptions", [
 
 const postMakeMove = router.post("/:gameId/car/:foCarId/position", [
   (req, res, next) => authenticate(req, res, next),
-  (req: Request & { user: usersAttributes }, res: Response) => {
+  (
+    req: Request & { app: { pubSub: PubSubJS.Base }; user: usersAttributes },
+    res: Response
+  ) => {
     const gameId = parseInt(req.params.gameId);
     const foCarId = parseInt(req.params.foCarId);
     const payload = req.body;
-    // @todo Do correct authorization
+    // @todo Do correct authorization and throwing errors
     authorize(req, res, async () => true).then(() => {
-      formulaSvc.makeMove({ gameId: gameId, traverse: payload });
+      formulaSvc
+        .makeMove({ gameId: gameId, carId: foCarId, traverse: payload })
+        .then(async () => {
+          const game = await formulaSvc.getGame({ gameId: gameId });
+          req.app.pubSub.publish(formulaSubscription + req.params.gameId, game);
+        })
+        .catch((e) => {
+          throw e;
+        });
     });
   },
 ]);

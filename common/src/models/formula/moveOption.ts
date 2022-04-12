@@ -269,8 +269,8 @@ const validateMo = (
   const damages = {
     tire: 0,
     brake: 0,
-    suspension: 0,
-    chassis: 0,
+    shocks: 0,
+    chassis: [],
   };
 
   // Checking if not braking too much
@@ -347,7 +347,7 @@ const validateMo = (
   // determined by a dice roll
   for (const debris of game.foDebris) {
     if (traverse.includes(debris.foPositionId)) {
-      damages.suspension++;
+      damages.shocks++;
     }
   }
 
@@ -368,9 +368,9 @@ const validateMo = (
       .foPositionToFoPosition2Positions.filter((p2p) => p2p.isAdjacent)
       .map((p2p) => p2p.foPositionFromId),
   ];
-  for (const car of game.foCars.filter(car => car.id != currentCar.id)) {
+  for (const car of game.foCars.filter((car) => car.id != currentCar.id)) {
     if (adjacentPositionIds.includes(car.foPositionId)) {
-      damages.chassis++;
+      damages.chassis.push(car.id);
     }
   }
   return damages;

@@ -34,4 +34,31 @@ const isFastStart = (
   );
 };
 
-export { rollGearDice, rollBlackDice, isSlowStart, isFastStart };
+const blackShocksDamageTop = 4;
+const isShocksDamage = (
+  blackDiceRoll: number | { (): number } = rollBlackDice
+) => {
+  return (
+    (typeof blackDiceRoll === "number" ? blackDiceRoll : blackDiceRoll()) <=
+    blackShocksDamageTop
+  );
+};
+
+const blackCollisionTop = 1;
+const isCollision = (
+  blackDiceRoll: number | { (): number } = rollBlackDice
+) => {
+  return (
+    (typeof blackDiceRoll === "number" ? blackDiceRoll : blackDiceRoll()) <=
+    blackCollisionTop
+  );
+};
+
+export {
+  rollGearDice,
+  rollBlackDice,
+  isSlowStart,
+  isFastStart,
+  isShocksDamage,
+  isCollision,
+};
