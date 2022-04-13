@@ -1,7 +1,7 @@
 import { Op } from "sequelize";
 import {
-  carStateEnum as carStateE,
-  damageTypeEnum as damageTypeE,
+  CarStateEnum as CarStateE,
+  DamageTypeEnum as DamageTypeE,
 } from "../../../common/src/models/enums/formula";
 import {
   gamesStateIdEnum as gamesStateIdE,
@@ -324,7 +324,7 @@ const start = async ({ gameId }: gameIdParam) => {
 
     game.foCars.forEach((car, carIndex) => {
       car.foPositionId = startingPositions[carIndex].id;
-      car.state = carStateE.racing;
+      car.state = CarStateE.racing;
       car.order = carIndex + 1;
     });
 
@@ -440,7 +440,7 @@ const processAutomaticActions = async ({ gameId }: gameIdParam) => {
       break;
     } else if (nextCar == null) {
       const racingCarsNumber = await foCars.count({
-        where: { gameId: gameId, state: carStateE.racing },
+        where: { gameId: gameId, state: CarStateE.racing },
       });
       if (racingCarsNumber > 0) {
         await generateTurnOrder({ gameId: gameId });
@@ -454,7 +454,7 @@ const processAutomaticActions = async ({ gameId }: gameIdParam) => {
 
 const generateTurnOrder = async ({ gameId }: gameIdParam) => {
   const cars = await foCars.findAll({
-    where: { gameId: gameId, state: carStateE.racing },
+    where: { gameId: gameId, state: CarStateE.racing },
     order: [
       ["lap", "DESC"],
       ["foPositionId", "DESC"],
@@ -485,15 +485,15 @@ const chooseGear = async ({
     switch (car.gear - gear) {
       case 4:
         updateDamages.push(
-          car.foDamages.find((damage) => damage.type == damageTypeE.engine)
+          car.foDamages.find((damage) => damage.type == DamageTypeE.engine)
         );
       case 3:
         updateDamages.push(
-          car.foDamages.find((damage) => damage.type == damageTypeE.brakes)
+          car.foDamages.find((damage) => damage.type == DamageTypeE.brakes)
         );
       case 2:
         updateDamages.push(
-          car.foDamages.find((damage) => damage.type == damageTypeE.gearbox)
+          car.foDamages.find((damage) => damage.type == DamageTypeE.gearbox)
         );
         break;
       default: // if the difference is bigger than 4, then it is invalid
@@ -598,17 +598,17 @@ const makeMove = async ({
     car.foPositionId = finalPositionId;
 
     const tireDamage = car.foDamages.find(
-      (tireDmg) => tireDmg.type == damageTypeE.tire
+      (tireDmg) => tireDmg.type == DamageTypeE.tire
     );
     tireDamage.wearPoints -= damages.tire;
 
     const brakeDamage = car.foDamages.find(
-      (brakeDmg) => brakeDmg.type == damageTypeE.brakes
+      (brakeDmg) => brakeDmg.type == DamageTypeE.brakes
     );
     brakeDamage.wearPoints -= damages.brake;
 
     const shocksDamage = car.foDamages.find(
-      (shocksDmg) => shocksDmg.type == damageTypeE.shocks
+      (shocksDmg) => shocksDmg.type == DamageTypeE.shocks
     );
     for (
       let shocksDamagePotential = damages.shocks;
@@ -621,7 +621,7 @@ const makeMove = async ({
     }
 
     const chassisDamage = car.foDamages.find(
-      (chassisDmg) => chassisDmg.type == damageTypeE.chassis
+      (chassisDmg) => chassisDmg.type == DamageTypeE.chassis
     );
     const otherChassisDamages: foDamages[] = [];
     const otherRetiredCarsToSave: foCars[] = [];
@@ -631,20 +631,20 @@ const makeMove = async ({
       }
       if (isCollision()) {
         const otherCarDamage = await foDamages.findOne({
-          where: { foCarId: otherCarId, type: damageTypeE.chassis },
+          where: { foCarId: otherCarId, type: DamageTypeE.chassis },
         });
         otherCarDamage.wearPoints--;
         otherChassisDamages.push(otherCarDamage);
         if (otherCarDamage.wearPoints <= 0) {
           const otherRetiredCar = await foCars.findByPk(otherCarId);
-          otherRetiredCar.state = carStateE.retired;
+          otherRetiredCar.state = CarStateE.retired;
           otherRetiredCarsToSave.push(otherRetiredCar);
         }
       }
     }
 
     if (shocksDamage.wearPoints <= 0 || chassisDamage.wearPoints <= 0) {
-      car.state = carStateE.retired;
+      car.state = CarStateE.retired;
     }
 
     const turn = await foTurns.findByPk(game.lastTurn.id);

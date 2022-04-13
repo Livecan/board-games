@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { DataGrid, GridColumns } from "@mui/x-data-grid";
 import React, { useEffect, useMemo, useState } from "react";
-import { damageTypeEnum as damageTypeE } from "../../../common/src/models/enums/formula";
+import { DamageTypeEnum as DamageTypeE } from "../../../common/src/models/enums/formula";
 import { foPositionsAttributes } from "../../../common/src/models/generated/foPositions";
 import {
   fullFormulaGame,
@@ -151,11 +151,11 @@ const MoveOptionDamageTable = ({
       rows={mos.map((mo) => ({
         id: mo.traverse.join("."),
         selection: { isSelected: mo === selected, onClick: () => onSelect(mo) },
-        tires: mo.foDamages.find((dmg) => dmg.type == damageTypeE.tire)
+        tires: mo.foDamages.find((dmg) => dmg.type == DamageTypeE.tire)
           .wearPoints,
-        brakes: mo.foDamages.find((dmg) => dmg.type == damageTypeE.brakes)
+        brakes: mo.foDamages.find((dmg) => dmg.type == DamageTypeE.brakes)
           .wearPoints,
-        shocks: mo.foDamages.find((dmg) => dmg.type == damageTypeE.shocks)
+        shocks: mo.foDamages.find((dmg) => dmg.type == DamageTypeE.shocks)
           .wearPoints,
       }))}
     />
