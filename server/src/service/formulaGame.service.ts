@@ -47,6 +47,18 @@ import {
 import { InvalidValueError, PreconditionRequiredError } from "../utils/errors";
 import { fullFormulaGame } from "../../../common/src/models/interfaces/formula";
 
+interface gameIdParam {
+  gameId: number;
+}
+
+interface gameAndUserIdParam extends gameIdParam {
+  userId: number;
+}
+
+interface foTrackIdParam {
+  foTrackId: number;
+}
+
 const config = {
   maxCarsPerPlayer: 15,
 };
@@ -81,7 +93,7 @@ const add = async ({
   }
 };
 
-const join = async ({ gameId, userId }: { gameId: number; userId: number }) => {
+const join = async ({ gameId, userId }: gameAndUserIdParam) => {
   try {
     await gamesUsers.findOrCreate({
       where: { gameId: gameId, userId: userId },
@@ -103,10 +115,7 @@ const join = async ({ gameId, userId }: { gameId: number; userId: number }) => {
 const addCar = async ({
   userId,
   gameId,
-}: {
-  userId: number;
-  gameId: number;
-}): Promise<foCars> => {
+}: gameAndUserIdParam): Promise<foCars> => {
   const foCar = await foCars.build({ userId: userId, gameId: gameId }).save();
   await Promise.all(
     (
@@ -164,8 +173,7 @@ const getGame = async ({ gameId }: gameIdParam): Promise<fullFormulaGame> => {
 const editGameSetup = async ({
   gameId,
   gameSetup,
-}: {
-  gameId: number;
+}: gameIdParam & {
   gameSetup: gameSetup;
 }) => {
   const game = await games.findByPk(gameId, {
@@ -189,9 +197,7 @@ const editCarSetup = async ({
   gameId,
   foCarId,
   foCarDamages,
-}: {
-  userId: number;
-  gameId: number;
+}: gameAndUserIdParam & {
   foCarId: number;
   foCarDamages: [foDamagesAttributes];
 }) => {
@@ -209,9 +215,7 @@ const setUserReady = async ({
   gameId,
   userId,
   isReady,
-}: {
-  gameId: number;
-  userId: number;
+}: gameAndUserIdParam & {
   isReady: boolean;
 }) => {
   // first figure out if the user
@@ -245,7 +249,6 @@ const setUserReady = async ({
   }
 };
 
-// @todo Consider use gameIdParam interface where relevant
 const start = async ({ gameId }: gameIdParam) => {
   const game = await games.findByPk(gameId, {
     include: [
@@ -335,14 +338,6 @@ const start = async ({ gameId }: gameIdParam) => {
   }
 };
 
-interface gameIdParam {
-  gameId: number;
-}
-
-interface foTrackIdParam {
-  foTrackId: number;
-}
-
 const getTrack = async (
   params: (gameIdParam | foTrackIdParam) & {
     include?: {
@@ -376,7 +371,7 @@ const getTrack = async (
             model: foPosition2Positions,
             as: "foPositionToFoPosition2Positions",
           },
-        // This filters out null models, which would otherwise be invalid
+          // This filters out null models, which would otherwise be invalid
         ].filter((model) => model),
       },
       { model: foCurves, as: "foCurves" },
@@ -385,7 +380,7 @@ const getTrack = async (
 };
 
 const processAutomaticActions = async ({ gameId }: gameIdParam) => {
-  for (;;) {
+  while (true) {
     const nextCar = await foCars.findOne({
       where: { gameId: gameId, order: { [Op.not]: null } },
       order: [["order", "ASC"]],

@@ -98,9 +98,8 @@ const postGameSetupRoute = router.post("/:gameId/setup", [
     const payload: gameSetup = req.body;
     authorize(req, res, canEditGameSetup).then(async () => {
       await formulaSvc.editGameSetup({ gameId: gameId, gameSetup: payload });
-      // @todo Add the setup edit functionality first
+
       const gameSetup = await formulaSvc.getGame({ gameId: gameId });
-      // console.log(gameSetup);
       req.app.pubSub.publish(
         formulaSubscription + req.params.gameId,
         gameSetup
@@ -139,9 +138,8 @@ const postCarSetupRoute = router.post("/:gameId/setup/car/:foCarId", [
         foCarId: foCarId,
         foCarDamages: payload,
       });
-      // @todo Add the setup edit functionality first
+
       const gameSetup = await formulaSvc.getGame({ gameId: gameId });
-      // console.log(gameSetup);
       req.app.pubSub.publish(
         formulaSubscription + req.params.gameId,
         gameSetup
@@ -221,7 +219,7 @@ const getTrack = router.get("/:gameId/track", async (req, res) => {
 /**
  * Checks that its current users turn and that he is supposed to choose gear.
  */
-const canChooseGear = async (req: Request & { user: usersAttributes }) => {
+const canControlCar = async (req: Request & { user: usersAttributes }) => {
   const gameId = parseInt(req.params.gameId);
   const foCarId = parseInt(req.params.foCarId);
 
@@ -252,7 +250,7 @@ const postChooseGearRoute = router.post("/:gameId/car/:foCarId/chooseGear", [
     const gameId = parseInt(req.params.gameId);
     const foCarId = parseInt(req.params.foCarId);
     const payload = req.body;
-    authorize(req, res, canChooseGear).then(async () => {
+    authorize(req, res, canControlCar).then(async () => {
       await formulaSvc
         .chooseGear({ gameId: gameId, carId: foCarId, gear: payload.gear })
         .then(() => res.sendStatus(200))
@@ -319,6 +317,8 @@ const GetMoveOptions = router.get("/:gameId/car/:foCarId/moveOptions", [
   },
 ]);
 
+// @todo Figure out error handling in Node.js/Express - maybe use middleware? - needs to avoid unsanitized Promises
+
 const postMakeMove = router.post("/:gameId/car/:foCarId/position", [
   (req, res, next) => authenticate(req, res, next),
   (
@@ -328,8 +328,7 @@ const postMakeMove = router.post("/:gameId/car/:foCarId/position", [
     const gameId = parseInt(req.params.gameId);
     const foCarId = parseInt(req.params.foCarId);
     const payload = req.body;
-    // @todo Do correct authorization and throwing errors
-    authorize(req, res, async () => true).then(() => {
+    authorize(req, res, canControlCar).then(() => {
       formulaSvc
         .makeMove({ gameId: gameId, carId: foCarId, traverse: payload })
         .then(async () => {
