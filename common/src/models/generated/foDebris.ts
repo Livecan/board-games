@@ -1,7 +1,7 @@
 import * as Sequelize from 'sequelize';
 import { DataTypes, Model, Optional } from 'sequelize';
+import type { foGames, foGamesId } from './foGames';
 import type { foPositions, foPositionsId } from './foPositions';
-import type { games, gamesId } from './games';
 
 export interface foDebrisAttributes {
   id: number;
@@ -23,16 +23,16 @@ export class foDebris extends Model<foDebrisAttributes, foDebrisCreationAttribut
   created!: Date;
   modified!: Date;
 
+  // foDebris belongsTo foGames via gameId
+  game!: foGames;
+  getGame!: Sequelize.BelongsToGetAssociationMixin<foGames>;
+  setGame!: Sequelize.BelongsToSetAssociationMixin<foGames, foGamesId>;
+  createGame!: Sequelize.BelongsToCreateAssociationMixin<foGames>;
   // foDebris belongsTo foPositions via foPositionId
   foPosition!: foPositions;
   getFoPosition!: Sequelize.BelongsToGetAssociationMixin<foPositions>;
   setFoPosition!: Sequelize.BelongsToSetAssociationMixin<foPositions, foPositionsId>;
   createFoPosition!: Sequelize.BelongsToCreateAssociationMixin<foPositions>;
-  // foDebris belongsTo games via gameId
-  game!: games;
-  getGame!: Sequelize.BelongsToGetAssociationMixin<games>;
-  setGame!: Sequelize.BelongsToSetAssociationMixin<games, gamesId>;
-  createGame!: Sequelize.BelongsToCreateAssociationMixin<games>;
 
   static initModel(sequelize: Sequelize.Sequelize): typeof foDebris {
     return foDebris.init({
@@ -46,8 +46,8 @@ export class foDebris extends Model<foDebrisAttributes, foDebrisCreationAttribut
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'games',
-        key: 'id'
+        model: 'fo_games',
+        key: 'game_id'
       },
       field: 'game_id'
     },

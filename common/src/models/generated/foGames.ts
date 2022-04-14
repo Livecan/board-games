@@ -1,6 +1,9 @@
 import * as Sequelize from 'sequelize';
 import { DataTypes, Model, Optional } from 'sequelize';
+import type { foCars, foCarsId } from './foCars';
+import type { foDebris, foDebrisId } from './foDebris';
 import type { foTracks, foTracksId } from './foTracks';
+import type { foTurns, foTurnsId } from './foTurns';
 import type { games, gamesId } from './games';
 
 export interface foGamesAttributes {
@@ -29,6 +32,42 @@ export class foGames extends Model<foGamesAttributes, foGamesCreationAttributes>
   techPitstops!: number;
   created!: Date;
 
+  // foGames hasMany foCars via gameId
+  foCars!: foCars[];
+  getFoCars!: Sequelize.HasManyGetAssociationsMixin<foCars>;
+  setFoCars!: Sequelize.HasManySetAssociationsMixin<foCars, foCarsId>;
+  addFoCar!: Sequelize.HasManyAddAssociationMixin<foCars, foCarsId>;
+  addFoCars!: Sequelize.HasManyAddAssociationsMixin<foCars, foCarsId>;
+  createFoCar!: Sequelize.HasManyCreateAssociationMixin<foCars>;
+  removeFoCar!: Sequelize.HasManyRemoveAssociationMixin<foCars, foCarsId>;
+  removeFoCars!: Sequelize.HasManyRemoveAssociationsMixin<foCars, foCarsId>;
+  hasFoCar!: Sequelize.HasManyHasAssociationMixin<foCars, foCarsId>;
+  hasFoCars!: Sequelize.HasManyHasAssociationsMixin<foCars, foCarsId>;
+  countFoCars!: Sequelize.HasManyCountAssociationsMixin;
+  // foGames hasMany foDebris via gameId
+  foDebris!: foDebris[];
+  getFoDebris!: Sequelize.HasManyGetAssociationsMixin<foDebris>;
+  setFoDebris!: Sequelize.HasManySetAssociationsMixin<foDebris, foDebrisId>;
+  addFoDebri!: Sequelize.HasManyAddAssociationMixin<foDebris, foDebrisId>;
+  addFoDebris!: Sequelize.HasManyAddAssociationsMixin<foDebris, foDebrisId>;
+  createFoDebri!: Sequelize.HasManyCreateAssociationMixin<foDebris>;
+  removeFoDebri!: Sequelize.HasManyRemoveAssociationMixin<foDebris, foDebrisId>;
+  removeFoDebris!: Sequelize.HasManyRemoveAssociationsMixin<foDebris, foDebrisId>;
+  hasFoDebri!: Sequelize.HasManyHasAssociationMixin<foDebris, foDebrisId>;
+  hasFoDebris!: Sequelize.HasManyHasAssociationsMixin<foDebris, foDebrisId>;
+  countFoDebris!: Sequelize.HasManyCountAssociationsMixin;
+  // foGames hasMany foTurns via gameId
+  foTurns!: foTurns[];
+  getFoTurns!: Sequelize.HasManyGetAssociationsMixin<foTurns>;
+  setFoTurns!: Sequelize.HasManySetAssociationsMixin<foTurns, foTurnsId>;
+  addFoTurn!: Sequelize.HasManyAddAssociationMixin<foTurns, foTurnsId>;
+  addFoTurns!: Sequelize.HasManyAddAssociationsMixin<foTurns, foTurnsId>;
+  createFoTurn!: Sequelize.HasManyCreateAssociationMixin<foTurns>;
+  removeFoTurn!: Sequelize.HasManyRemoveAssociationMixin<foTurns, foTurnsId>;
+  removeFoTurns!: Sequelize.HasManyRemoveAssociationsMixin<foTurns, foTurnsId>;
+  hasFoTurn!: Sequelize.HasManyHasAssociationMixin<foTurns, foTurnsId>;
+  hasFoTurns!: Sequelize.HasManyHasAssociationsMixin<foTurns, foTurnsId>;
+  countFoTurns!: Sequelize.HasManyCountAssociationsMixin;
   // foGames belongsTo foTracks via foTrackId
   foTrack!: foTracks;
   getFoTrack!: Sequelize.BelongsToGetAssociationMixin<foTracks>;

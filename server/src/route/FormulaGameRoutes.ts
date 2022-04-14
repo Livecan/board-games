@@ -20,6 +20,7 @@ import { foDamagesAttributes } from "../../../common/src/models/generated/foDama
 import { gamesStateIdEnum as gamesStateIdE } from "../../../common/src/models/enums/game";
 import { foTurns } from "../../../common/src/models/generated/foTurns";
 import { Op } from "sequelize";
+import { foGames } from "../../../common/src/models/generated/foGames";
 
 const router = express.Router();
 
@@ -223,20 +224,23 @@ const canControlCar = async (req: Request & { user: usersAttributes }) => {
   const gameId = parseInt(req.params.gameId);
   const foCarId = parseInt(req.params.foCarId);
 
-  const game = await games.findByPk(gameId, {
-    include: {
-      model: foCars,
-      as: "foCars",
-      where: { id: foCarId, userId: req.user.id },
-    },
+  const foGame = await foGames.findByPk(gameId, {
+    include: [
+      { model: games, as: "game" },
+      {
+        model: foCars,
+        as: "foCars",
+        where: { id: foCarId, userId: req.user.id },
+      },
+    ],
   });
   const nextTurn = await foTurns.findOne({
     where: { gameId: gameId, gear: null },
   });
 
   return (
-    game.gameStateId == gamesStateIdE.started &&
-    game.foCars.length &&
+    foGame.game.gameStateId == gamesStateIdE.started &&
+    foGame.foCars.length &&
     nextTurn?.foCarId == foCarId
   );
 };
@@ -277,12 +281,18 @@ const canChooseMoveOptions = async (
   const gameId = parseInt(req.params.gameId);
   const foCarId = parseInt(req.params.foCarId);
 
-  const game = await games.findByPk(gameId, {
-    include: {
-      model: foCars,
-      as: "foCars",
-      where: { id: foCarId, userId: req.user.id },
-    },
+  const foGame = await foGames.findByPk(gameId, {
+    include: [
+      {
+        model: games,
+        as: "game",
+      },
+      {
+        model: foCars,
+        as: "foCars",
+        where: { id: foCarId, userId: req.user.id },
+      },
+    ],
   });
   const nextTurn = await foTurns.findOne({
     where: {
@@ -294,8 +304,8 @@ const canChooseMoveOptions = async (
   });
 
   return (
-    game.gameStateId == gamesStateIdE.started &&
-    game.foCars.length &&
+    foGame.game.gameStateId == gamesStateIdE.started &&
+    foGame.foCars.length &&
     nextTurn?.foCarId == foCarId
   );
 };

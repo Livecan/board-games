@@ -129,16 +129,22 @@ const addCar = async ({
   return foCar;
 };
 
+// @todo See fullGame interface and consider using here!
 type gameSetup = foGamesAttributes & gamesAttributes;
 
 const getGame = async ({ gameId }: gameIdParam): Promise<fullFormulaGame> => {
-  const game = await games.findByPk(gameId, {
+  const foGame = await foGames.findByPk(gameId, {
     include: [
-      { model: foGames, as: "foGame" },
       {
-        model: gamesUsers,
-        as: "gamesUsers",
-        include: [{ model: users, as: "user", attributes: ["id", "name"] }],
+        model: games,
+        as: "game",
+        include: [
+          {
+            model: gamesUsers,
+            as: "gamesUsers",
+            include: [{ model: users, as: "user", attributes: ["id", "name"] }],
+          },
+        ],
       },
       {
         model: foCars,
@@ -159,9 +165,9 @@ const getGame = async ({ gameId }: gameIdParam): Promise<fullFormulaGame> => {
     ],
   });
   const gameSetup = {
-    ...game.toJSON(),
-    ...game.foGame.toJSON(),
-    lastTurn: game.foTurns.pop(),
+    ...foGame.toJSON(),
+    ...foGame.game.toJSON(),
+    lastTurn: foGame.foTurns.pop(),
     foTurns: null,
   } as fullFormulaGame;
 
@@ -250,15 +256,18 @@ const setUserReady = async ({
 };
 
 const start = async ({ gameId }: gameIdParam) => {
-  const game = await games.findByPk(gameId, {
+  const foGame = await foGames.findByPk(gameId, {
     include: [
-      { model: foGames, as: "foGame" },
-      { model: gamesUsers, as: "gamesUsers" },
+      {
+        model: games,
+        as: "game",
+        include: [{ model: gamesUsers, as: "gamesUsers" }],
+      },
       { model: foCars, as: "foCars" },
     ],
   });
 
-  const gameUsers: gamesUsers[] = game.gamesUsers;
+  const gameUsers: gamesUsers[] = foGame.game.gamesUsers;
 
   // First, all users must be ready to start
   if (gameUsers.every((gameUser) => gameUser.readyState == readyStateE.ready)) {
@@ -273,10 +282,10 @@ const start = async ({ gameId }: gameIdParam) => {
     await Promise.all(
       gameUsers.map(async (gameUser) => {
         await Promise.all(
-          game.foCars
+          foGame.foCars
             .filter((gameCar) => gameCar.userId == gameUser.userId)
             .map(async (gameCar, userCarIndex) => {
-              if (userCarIndex >= game.foGame.carsPerPlayer) {
+              if (userCarIndex >= foGame.carsPerPlayer) {
                 await gameCar.destroy();
               }
             })
@@ -284,18 +293,18 @@ const start = async ({ gameId }: gameIdParam) => {
       })
     );
 
-    game.foCars = await game.getFoCars();
+    foGame.foCars = await foGame.getFoCars();
 
     // @todo Setting up pitstops global and for cars - later; for now zero stops - see next line
-    game.foCars.forEach(
-      (foCar) => (foCar.techPitstopsLeft = game.foGame.techPitstops)
+    foGame.foCars.forEach(
+      (foCar) => (foCar.techPitstopsLeft = foGame.techPitstops)
     );
 
     // Make car teams - if 2 per player, then each player has team, otherwise assign first two cars team 1, second 2 team 2, ...
-    if (game.foGame.carsPerPlayer == 2) {
+    if (foGame.carsPerPlayer == 2) {
       // Each player will have cars in the same team
       gameUsers.forEach((gameUser, teamNumber) =>
-        game.foCars
+        foGame.foCars
           .filter((car) => car.userId == gameUser.userId)
           .forEach((car) => (car.team = teamNumber + 1))
       );
@@ -303,8 +312,8 @@ const start = async ({ gameId }: gameIdParam) => {
       // Players do not have two cars each, then cars are randomly assigned to teams
       let teamNumber = 1;
       const maxTeamNumber = 5;
-      game.foCars.sort(() => Math.random() - 0.5);
-      game.foCars.forEach((car) => {
+      foGame.foCars.sort(() => Math.random() - 0.5);
+      foGame.foCars.forEach((car) => {
         car.team = teamNumber;
         // Roll through the team numbers
         teamNumber = teamNumber == maxTeamNumber ? 1 : teamNumber + 1;
@@ -312,23 +321,23 @@ const start = async ({ gameId }: gameIdParam) => {
     }
 
     // Assign starting positions in random order and each car in "RACING" state
-    game.foCars.sort(() => Math.random() - 0.5);
+    foGame.foCars.sort(() => Math.random() - 0.5);
 
     const startingPositions = await foPositions.findAll({
       where: {
-        foTrackId: game.foGame.foTrackId,
+        foTrackId: foGame.foTrackId,
         startingPosition: { [Op.not]: null },
       },
       order: [["startingPosition", "ASC"]],
     });
 
-    game.foCars.forEach((car, carIndex) => {
+    foGame.foCars.forEach((car, carIndex) => {
       car.foPositionId = startingPositions[carIndex].id;
       car.state = CarStateE.racing;
       car.order = carIndex + 1;
     });
 
-    await Promise.all(game.foCars.map(async (car) => await car.save()));
+    await Promise.all(foGame.foCars.map(async (car) => await car.save()));
 
     await processAutomaticActions({ gameId: gameId });
 
@@ -350,11 +359,7 @@ const getTrack = async (
   if ("foTrackId" in params) {
     foTrackId = params.foTrackId;
   } else {
-    foTrackId = (
-      await games.findByPk(params.gameId, {
-        include: { model: foGames, as: "foGame" },
-      })
-    ).foGame.foTrackId;
+    foTrackId = (await foGames.findByPk(params.gameId)).foTrackId;
   }
 
   return await foTracks.findByPk(foTrackId, {
@@ -528,21 +533,24 @@ const chooseGear = async ({
 };
 
 const getMoveOptions = async ({ gameId }: gameIdParam) => {
-  const game = await games.findByPk(gameId, {
+  const foGame = await foGames.findByPk(gameId, {
     include: [
-      { model: foGames, as: "foGame" },
+      {
+        model: games,
+        as: "game",
+        include: [{ model: gamesUsers, as: "gamesUsers" }],
+      },
       {
         model: foCars,
         as: "foCars",
         include: [{ model: foDamages, as: "foDamages" }],
       },
       { model: foDebris, as: "foDebris" },
-      { model: gamesUsers, as: "gamesUsers" },
     ],
   });
   const fullGame: fullFormulaGame = {
-    ...game.toJSON(),
-    ...game.foGame.toJSON(),
+    ...foGame.toJSON(),
+    ...foGame.game.toJSON(),
   };
   const track = await foTracks.findByPk(fullGame.foTrackId, {
     include: [

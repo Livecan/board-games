@@ -150,6 +150,12 @@ export function initModels(sequelize: Sequelize) {
   foCurves.hasMany(foCurves, { as: "foCurves", foreignKey: "foNextCurveId"});
   foPositions.belongsTo(foCurves, { as: "foCurve", foreignKey: "foCurveId"});
   foCurves.hasMany(foPositions, { as: "foPositions", foreignKey: "foCurveId"});
+  foCars.belongsTo(foGames, { as: "game", foreignKey: "gameId"});
+  foGames.hasMany(foCars, { as: "foCars", foreignKey: "gameId"});
+  foDebris.belongsTo(foGames, { as: "game", foreignKey: "gameId"});
+  foGames.hasMany(foDebris, { as: "foDebris", foreignKey: "gameId"});
+  foTurns.belongsTo(foGames, { as: "game", foreignKey: "gameId"});
+  foGames.hasMany(foTurns, { as: "foTurns", foreignKey: "gameId"});
   foDamages.belongsTo(foLogs, { as: "foLog", foreignKey: "foLogId"});
   foLogs.hasMany(foDamages, { as: "foDamages", foreignKey: "foLogId"});
   foCars.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
@@ -180,14 +186,8 @@ export function initModels(sequelize: Sequelize) {
   games.hasMany(drTokensGames, { as: "drTokensGames", foreignKey: "gameId"});
   drTurns.belongsTo(games, { as: "game", foreignKey: "gameId"});
   games.hasMany(drTurns, { as: "drTurns", foreignKey: "gameId"});
-  foCars.belongsTo(games, { as: "game", foreignKey: "gameId"});
-  games.hasMany(foCars, { as: "foCars", foreignKey: "gameId"});
-  foDebris.belongsTo(games, { as: "game", foreignKey: "gameId"});
-  games.hasMany(foDebris, { as: "foDebris", foreignKey: "gameId"});
   foGames.belongsTo(games, { as: "game", foreignKey: "gameId"});
   games.hasOne(foGames, { as: "foGame", foreignKey: "gameId"});
-  foTurns.belongsTo(games, { as: "game", foreignKey: "gameId"});
-  games.hasMany(foTurns, { as: "foTurns", foreignKey: "gameId"});
   gamesUsers.belongsTo(games, { as: "game", foreignKey: "gameId"});
   games.hasMany(gamesUsers, { as: "gamesUsers", foreignKey: "gameId"});
   drResults.belongsTo(users, { as: "user", foreignKey: "userId"});

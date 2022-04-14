@@ -1,8 +1,8 @@
 import * as Sequelize from 'sequelize';
 import { DataTypes, Model, Optional } from 'sequelize';
 import type { foCars, foCarsId } from './foCars';
+import type { foGames, foGamesId } from './foGames';
 import type { foPositions, foPositionsId } from './foPositions';
-import type { games, gamesId } from './games';
 
 export interface foTurnsAttributes {
   id: number;
@@ -37,16 +37,16 @@ export class foTurns extends Model<foTurnsAttributes, foTurnsCreationAttributes>
   getFoCar!: Sequelize.BelongsToGetAssociationMixin<foCars>;
   setFoCar!: Sequelize.BelongsToSetAssociationMixin<foCars, foCarsId>;
   createFoCar!: Sequelize.BelongsToCreateAssociationMixin<foCars>;
+  // foTurns belongsTo foGames via gameId
+  game!: foGames;
+  getGame!: Sequelize.BelongsToGetAssociationMixin<foGames>;
+  setGame!: Sequelize.BelongsToSetAssociationMixin<foGames, foGamesId>;
+  createGame!: Sequelize.BelongsToCreateAssociationMixin<foGames>;
   // foTurns belongsTo foPositions via foPositionId
   foPosition!: foPositions;
   getFoPosition!: Sequelize.BelongsToGetAssociationMixin<foPositions>;
   setFoPosition!: Sequelize.BelongsToSetAssociationMixin<foPositions, foPositionsId>;
   createFoPosition!: Sequelize.BelongsToCreateAssociationMixin<foPositions>;
-  // foTurns belongsTo games via gameId
-  game!: games;
-  getGame!: Sequelize.BelongsToGetAssociationMixin<games>;
-  setGame!: Sequelize.BelongsToSetAssociationMixin<games, gamesId>;
-  createGame!: Sequelize.BelongsToCreateAssociationMixin<games>;
 
   static initModel(sequelize: Sequelize.Sequelize): typeof foTurns {
     return foTurns.init({
@@ -60,8 +60,8 @@ export class foTurns extends Model<foTurnsAttributes, foTurnsCreationAttributes>
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'games',
-        key: 'id'
+        model: 'fo_games',
+        key: 'game_id'
       },
       field: 'game_id'
     },
@@ -126,17 +126,17 @@ export class foTurns extends Model<foTurnsAttributes, foTurnsCreationAttributes>
         ]
       },
       {
-        name: "game_id",
-        using: "BTREE",
-        fields: [
-          { name: "game_id" },
-        ]
-      },
-      {
         name: "fo_position_id",
         using: "BTREE",
         fields: [
           { name: "fo_position_id" },
+        ]
+      },
+      {
+        name: "fo_turns_ibfk_2",
+        using: "BTREE",
+        fields: [
+          { name: "game_id" },
         ]
       },
     ]

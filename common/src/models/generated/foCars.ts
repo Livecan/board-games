@@ -2,10 +2,10 @@ import * as Sequelize from 'sequelize';
 import { DataTypes, Model, Optional } from 'sequelize';
 import type { foCurves, foCurvesId } from './foCurves';
 import type { foDamages, foDamagesId } from './foDamages';
+import type { foGames, foGamesId } from './foGames';
 import type { foLogs, foLogsId } from './foLogs';
 import type { foPositions, foPositionsId } from './foPositions';
 import type { foTurns, foTurnsId } from './foTurns';
-import type { games, gamesId } from './games';
 import type { users, usersId } from './users';
 
 export interface foCarsAttributes {
@@ -93,16 +93,16 @@ export class foCars extends Model<foCarsAttributes, foCarsCreationAttributes> im
   getFoCurve!: Sequelize.BelongsToGetAssociationMixin<foCurves>;
   setFoCurve!: Sequelize.BelongsToSetAssociationMixin<foCurves, foCurvesId>;
   createFoCurve!: Sequelize.BelongsToCreateAssociationMixin<foCurves>;
+  // foCars belongsTo foGames via gameId
+  game!: foGames;
+  getGame!: Sequelize.BelongsToGetAssociationMixin<foGames>;
+  setGame!: Sequelize.BelongsToSetAssociationMixin<foGames, foGamesId>;
+  createGame!: Sequelize.BelongsToCreateAssociationMixin<foGames>;
   // foCars belongsTo foPositions via foPositionId
   foPosition!: foPositions;
   getFoPosition!: Sequelize.BelongsToGetAssociationMixin<foPositions>;
   setFoPosition!: Sequelize.BelongsToSetAssociationMixin<foPositions, foPositionsId>;
   createFoPosition!: Sequelize.BelongsToCreateAssociationMixin<foPositions>;
-  // foCars belongsTo games via gameId
-  game!: games;
-  getGame!: Sequelize.BelongsToGetAssociationMixin<games>;
-  setGame!: Sequelize.BelongsToSetAssociationMixin<games, gamesId>;
-  createGame!: Sequelize.BelongsToCreateAssociationMixin<games>;
   // foCars belongsTo users via userId
   user!: users;
   getUser!: Sequelize.BelongsToGetAssociationMixin<users>;
@@ -121,8 +121,8 @@ export class foCars extends Model<foCarsAttributes, foCarsCreationAttributes> im
       type: DataTypes.INTEGER,
       allowNull: false,
       references: {
-        model: 'games',
-        key: 'id'
+        model: 'fo_games',
+        key: 'game_id'
       },
       field: 'game_id'
     },

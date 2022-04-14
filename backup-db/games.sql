@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Apr 11, 2022 at 04:23 PM
+-- Generation Time: Apr 14, 2022 at 07:33 PM
 -- Server version: 5.7.26
 -- PHP Version: 7.3.5
 
@@ -180,7 +180,7 @@ CREATE TABLE IF NOT EXISTS `fo_cars` (
   KEY `lap` (`lap`),
   KEY `order` (`order`),
   KEY `fo_curve_id` (`fo_curve_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1569 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB AUTO_INCREMENT=1556 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- --------------------------------------------------------
 
@@ -245,7 +245,7 @@ CREATE TABLE IF NOT EXISTS `fo_damages` (
   KEY `created` (`created`),
   KEY `modified` (`modified`),
   KEY `fo_car_damage_type` (`fo_car_id`,`type`) USING BTREE
-) ENGINE=InnoDB AUTO_INCREMENT=53395 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+) ENGINE=InnoDB AUTO_INCREMENT=53317 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- --------------------------------------------------------
 
@@ -4795,9 +4795,9 @@ CREATE TABLE IF NOT EXISTS `fo_turns` (
   `modified` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `fo_car_id` (`fo_car_id`),
-  KEY `game_id` (`game_id`),
-  KEY `fo_position_id` (`fo_position_id`)
-) ENGINE=InnoDB AUTO_INCREMENT=32 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+  KEY `fo_position_id` (`fo_position_id`),
+  KEY `fo_turns_ibfk_2` (`game_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=33 DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
 -- --------------------------------------------------------
 
@@ -4948,7 +4948,7 @@ ALTER TABLE `dr_turns`
 -- Constraints for table `fo_cars`
 --
 ALTER TABLE `fo_cars`
-  ADD CONSTRAINT `fo_cars_ibfk_1` FOREIGN KEY (`game_id`) REFERENCES `games` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fo_cars_ibfk_1` FOREIGN KEY (`game_id`) REFERENCES `fo_games` (`game_id`) ON DELETE CASCADE,
   ADD CONSTRAINT `fo_cars_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   ADD CONSTRAINT `fo_cars_ibfk_3` FOREIGN KEY (`fo_position_id`) REFERENCES `fo_positions` (`id`),
   ADD CONSTRAINT `fo_cars_ibfk_4` FOREIGN KEY (`fo_curve_id`) REFERENCES `fo_curves` (`id`);
@@ -4971,7 +4971,7 @@ ALTER TABLE `fo_damages`
 -- Constraints for table `fo_debris`
 --
 ALTER TABLE `fo_debris`
-  ADD CONSTRAINT `fo_debris_ibfk_1` FOREIGN KEY (`game_id`) REFERENCES `games` (`id`),
+  ADD CONSTRAINT `fo_debris_ibfk_1` FOREIGN KEY (`game_id`) REFERENCES `fo_games` (`game_id`),
   ADD CONSTRAINT `fo_debris_ibfk_2` FOREIGN KEY (`fo_position_id`) REFERENCES `fo_positions` (`id`);
 
 --
@@ -5007,7 +5007,7 @@ ALTER TABLE `fo_positions`
 --
 ALTER TABLE `fo_turns`
   ADD CONSTRAINT `fo_turns_ibfk_1` FOREIGN KEY (`fo_car_id`) REFERENCES `fo_cars` (`id`),
-  ADD CONSTRAINT `fo_turns_ibfk_2` FOREIGN KEY (`game_id`) REFERENCES `games` (`id`),
+  ADD CONSTRAINT `fo_turns_ibfk_2` FOREIGN KEY (`game_id`) REFERENCES `fo_games` (`game_id`),
   ADD CONSTRAINT `fo_turns_ibfk_3` FOREIGN KEY (`fo_position_id`) REFERENCES `fo_positions` (`id`);
 
 --
