@@ -1,5 +1,6 @@
 import {
   Box,
+  BoxProps,
   Button,
   ClickAwayListener,
   Radio,
@@ -17,48 +18,37 @@ import {
   fullTrack,
   moveOption,
 } from "../../../common/src/models/interfaces/formula";
+import {
+  SelectedMoSprite,
+  DamageMoSprite,
+  NoDamageMoSprite,
+  TraverseMoSprite,
+  CarSprite,
+  DebrisSprite,
+} from "./FormulaTrackObjectSprites";
 
-const getCarImageSrc = (carIndex: number) =>
-  `${Math.trunc(carIndex / 2) + 1}${carIndex % 2 == 0 ? "a" : "b"}.png`;
+interface TrackObjectWrapperProps extends BoxProps {
+  foPosition: foPositionsAttributes;
+  onClick?: () => void;
+  sx?: SxProps;
+}
 
-// @todo Create an svg component instead of this
-const getMoImageSrc = (isSelected: boolean, isDamaged: boolean) =>
-  `car-outline-${
-    isSelected ? "selected" : isDamaged ? "damage" : "nodamage"
-  }.svg`;
-
-const CarSprite = React.forwardRef(
-  (
-    {
-      src,
-      position,
-      onClick,
-      sx,
-      ...props
-    }: {
-      src: string;
-      position: foPositionsAttributes;
-      onClick?: () => void;
-      sx?: SxProps;
-    },
-    ref
-  ) => (
+const TrackObjectWrapper = React.forwardRef(
+  ({ foPosition, onClick, sx, ...props }: TrackObjectWrapperProps, ref) => (
     <Box
-      component="img"
-      src={src}
       height="1.2%"
       width="1.2%"
       position={"absolute"}
-      left={`${position.posX / 1000 - 0.6}%`}
-      top={`${position.posY / 1000 - 0.6}%`}
+      left={`${foPosition.posX / 1000 - 0.6}%`}
+      top={`${foPosition.posY / 1000 - 0.6}%`}
       sx={{
-        transform: `rotate(${position.angle}rad)`,
+        transform: `rotate(${foPosition.angle}rad)`,
         ...sx,
       }}
       onClick={onClick}
       {...props}
       ref={ref}
-    />
+    ></Box>
   )
 );
 
@@ -212,17 +202,19 @@ const MoveOption = ({
             />
           }
         >
-          <CarSprite
-            src={`/resources/formula/move-options/${getMoImageSrc(
-              isSelected,
-              // @todo If MO will only contains traverse (& movesLeft?), will need to calculate the damage, probably do it in useMemo prior to here
-              // If there are multiple MOs selected or if only one selected and it has damage, use damage MO icon
-              hasDamaged
-            )}`}
-            position={position}
+          <TrackObjectWrapper
+            foPosition={position}
             onClick={() => onSelect(mos[0])}
             sx={{ cursor: "pointer" }}
-          />
+          >
+            {isSelected ? (
+              <SelectedMoSprite />
+            ) : hasDamaged ? (
+              <DamageMoSprite />
+            ) : (
+              <NoDamageMoSprite />
+            )}
+          </TrackObjectWrapper>
         </Tooltip>
       </div>
     </ClickAwayListener>
@@ -269,35 +261,36 @@ const FormulaGameBoard = ({
           width="100%"
         />
         {game.foDebris.map((debris) => (
-          <CarSprite
+          <TrackObjectWrapper
             key={debris.id}
-            src="/resources/formula/track-objects/oil.png"
-            position={track.foPositions.find(
+            foPosition={track.foPositions.find(
               (position) => position.id == debris.foPositionId
             )}
             sx={{ opacity: 0.8 }}
-          />
+          >
+            <DebrisSprite />
+          </TrackObjectWrapper>
         ))}
         {game.foCars.map((car, index) => (
-          <CarSprite
+          <TrackObjectWrapper
             key={car.id}
-            src={`/resources/formula/cars/${getCarImageSrc(index)}`}
-            position={track.foPositions.find(
+            foPosition={track.foPositions.find(
               (position) => position.id == car.foPositionId
             )}
             // @todo When moving on board is functional, consider using sx transition on car's left and top
-          />
+          >
+            <CarSprite carIndex={index} />
+          </TrackObjectWrapper>
         ))}
-        {/* @todo Need to do some sort of unique positions here and onClick
-            should pick the MOs from the availableMOs */}
         {selected?.traverse?.map((positionId) => (
-          <CarSprite
+          <TrackObjectWrapper
             key={positionId}
-            src="/resources/formula/move-options/car-outline-top-view.svg"
-            position={track.foPositions.find(
+            foPosition={track.foPositions.find(
               (position) => position.id == positionId
             )}
-          />
+          >
+            <TraverseMoSprite />
+          </TrackObjectWrapper>
         ))}
         {[...mosByPositionId.entries()].map(
           ([positionId, mos]) =>
