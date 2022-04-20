@@ -1,7 +1,6 @@
 import * as Sequelize from 'sequelize';
 import { DataTypes, Model, Optional } from 'sequelize';
 import type { foCars, foCarsId } from './foCars';
-import type { foDamages, foDamagesId } from './foDamages';
 import type { foPositions, foPositionsId } from './foPositions';
 
 export interface foLogsAttributes {
@@ -39,18 +38,6 @@ export class foLogs extends Model<foLogsAttributes, foLogsCreationAttributes> im
   getFoCar!: Sequelize.BelongsToGetAssociationMixin<foCars>;
   setFoCar!: Sequelize.BelongsToSetAssociationMixin<foCars, foCarsId>;
   createFoCar!: Sequelize.BelongsToCreateAssociationMixin<foCars>;
-  // foLogs hasMany foDamages via foLogId
-  foDamages!: foDamages[];
-  getFoDamages!: Sequelize.HasManyGetAssociationsMixin<foDamages>;
-  setFoDamages!: Sequelize.HasManySetAssociationsMixin<foDamages, foDamagesId>;
-  addFoDamage!: Sequelize.HasManyAddAssociationMixin<foDamages, foDamagesId>;
-  addFoDamages!: Sequelize.HasManyAddAssociationsMixin<foDamages, foDamagesId>;
-  createFoDamage!: Sequelize.HasManyCreateAssociationMixin<foDamages>;
-  removeFoDamage!: Sequelize.HasManyRemoveAssociationMixin<foDamages, foDamagesId>;
-  removeFoDamages!: Sequelize.HasManyRemoveAssociationsMixin<foDamages, foDamagesId>;
-  hasFoDamage!: Sequelize.HasManyHasAssociationMixin<foDamages, foDamagesId>;
-  hasFoDamages!: Sequelize.HasManyHasAssociationsMixin<foDamages, foDamagesId>;
-  countFoDamages!: Sequelize.HasManyCountAssociationsMixin;
   // foLogs belongsTo foPositions via foPositionId
   foPosition!: foPositions;
   getFoPosition!: Sequelize.BelongsToGetAssociationMixin<foPositions>;

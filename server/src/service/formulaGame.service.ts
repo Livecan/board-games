@@ -1,8 +1,5 @@
 import { Op } from "sequelize";
-import {
-  CarStateEnum as CarStateE,
-  DamageTypeEnum as DamageTypeE,
-} from "../../../common/src/models/enums/formula";
+import { CarStateEnum as CarStateE } from "../../../common/src/models/enums/formula";
 import {
   gamesStateIdEnum as gamesStateIdE,
   gamesUsersReadyStateEnum as readyStateE,
@@ -15,12 +12,11 @@ import {
   rollBlackDice,
   rollGearDice,
 } from "../../../common/src/models/formula/dice";
-import { foCars } from "../../../common/src/models/generated/foCars";
-import { foCurves } from "../../../common/src/models/generated/foCurves";
 import {
-  foDamages,
-  foDamagesAttributes,
-} from "../../../common/src/models/generated/foDamages";
+  foCars,
+  foCarsAttributes,
+} from "../../../common/src/models/generated/foCars";
+import { foCurves } from "../../../common/src/models/generated/foCurves";
 import { foDebris } from "../../../common/src/models/generated/foDebris";
 import { foEDamageTypes } from "../../../common/src/models/generated/foEDamageTypes";
 import {
@@ -116,16 +112,18 @@ const addCar = async ({
   userId,
   gameId,
 }: gameAndUserIdParam): Promise<foCars> => {
-  const foCar = await foCars.build({ userId: userId, gameId: gameId }).save();
-  await Promise.all(
-    (
-      await foEDamageTypes.findAll()
-    ).map(async (foEDamageType) => {
-      await foDamages
-        .build({ foCarId: foCar.id, type: foEDamageType.id, wearPoints: 3 })
-        .save();
+  const foCar = await foCars
+    .build({
+      userId: userId,
+      gameId: gameId,
+      wpTire: 6,
+      wpGearbox: 3,
+      wpBrakes: 3,
+      wpEngine: 3,
+      wpChassis: 3,
+      wpShocks: 3,
     })
-  );
+    .save();
   return foCar;
 };
 
@@ -149,7 +147,6 @@ const getGame = async ({ gameId }: gameIdParam): Promise<fullFormulaGame> => {
       {
         model: foCars,
         as: "foCars",
-        include: [{ model: foDamages, as: "foDamages" }],
       },
       {
         model: foDebris,
@@ -158,12 +155,15 @@ const getGame = async ({ gameId }: gameIdParam): Promise<fullFormulaGame> => {
       {
         model: foTurns,
         as: "foTurns",
+        // @todo I do not want INNER JOIN here
+        required: false,
         where: {
           [Op.or]: [{ gear: null }, { foPositionId: null }],
         },
       },
     ],
   });
+
   const gameSetup = {
     ...foGame.toJSON(),
     ...foGame.game.toJSON(),
@@ -202,17 +202,12 @@ const editCarSetup = async ({
   userId,
   gameId,
   foCarId,
-  foCarDamages,
+  foCar,
 }: gameAndUserIdParam & {
   foCarId: number;
-  foCarDamages: [foDamagesAttributes];
+  foCar: foCarsAttributes;
 }) => {
-  for (const foCarDamage of foCarDamages) {
-    await foDamages.update(
-      { wearPoints: Math.max(1, foCarDamage.wearPoints) },
-      { where: { foCarId: foCarId, type: foCarDamage.type } }
-    );
-  }
+  await foCars.update(foCar, { where: { id: foCarId } });
 
   await setUserReady({ gameId: gameId, userId: userId, isReady: false });
 };
@@ -242,7 +237,12 @@ const setUserReady = async ({
       .filter((foCar) => foCar.userId === userId)
       .every(
         (foCar) =>
-          foCar.foDamages.reduce((carry, next) => carry + next.wearPoints, 0) ==
+          foCar.wpTire +
+            foCar.wpGearbox +
+            foCar.wpBrakes +
+            foCar.wpEngine +
+            foCar.wpChassis +
+            foCar.wpShocks ==
           game.wearPoints
       );
     if (allCarsCorrectWearPoints) {
@@ -478,44 +478,28 @@ const chooseGear = async ({
   carId,
   gear,
 }: gameIdParam & { carId: number; gear: number }) => {
-  const car = await foCars.findByPk(carId, {
-    include: { model: foDamages, as: "foDamages" },
-  });
+  const car = await foCars.findByPk(carId);
 
   if (gear > 6 || gear > car.gear + 1 || gear < 1) {
     throw new InvalidValueError(`Invalid value of gear (${gear})`);
   } else if (gear < car.gear - 1) {
     // Dealing the damage
-    const updateDamages: foDamages[] = [];
     switch (car.gear - gear) {
       case 4:
-        updateDamages.push(
-          car.foDamages.find((damage) => damage.type == DamageTypeE.engine)
-        );
+        car.wpEngine--;
       case 3:
-        updateDamages.push(
-          car.foDamages.find((damage) => damage.type == DamageTypeE.brakes)
-        );
+        car.wpBrakes--;
       case 2:
-        updateDamages.push(
-          car.foDamages.find((damage) => damage.type == DamageTypeE.gearbox)
-        );
+        car.wpGearbox--;
         break;
       default: // if the difference is bigger than 4, then it is invalid
         throw new InvalidValueError(
           `Invalid value of gear (${gear}), cannot downshift by 5`
         );
     }
-    if (updateDamages.some((damage) => damage.wearPoints <= 1)) {
+    if (car.wpEngine < 1 || car.wpBrakes < 1 || car.wpGearbox < 1) {
       throw new InvalidValueError(
         `Invalid value of gear (${gear}), the car cannot sustain the damage`
-      );
-    } else {
-      await Promise.all(
-        updateDamages.map((updateDamage) => {
-          updateDamage.wearPoints--;
-          updateDamage.save();
-        })
       );
     }
   }
@@ -543,7 +527,6 @@ const getMoveOptions = async ({ gameId }: gameIdParam) => {
       {
         model: foCars,
         as: "foCars",
-        include: [{ model: foDamages, as: "foDamages" }],
       },
       { model: foDebris, as: "foDebris" },
     ],
@@ -598,60 +581,42 @@ const makeMove = async ({
       };
   // @todo Get next lap info from validateMo as well and make sure that last move is calculated correctly
   if ((damages = validateMo(traverse, game, track))) {
-    const car = await foCars.findByPk(carId, {
-      include: { model: foDamages, as: "foDamages" },
-    });
+    const car = await foCars.findByPk(carId);
     const finalPositionId =
       traverse.length > 0 ? traverse[traverse.length - 1] : car.foPositionId;
     car.foPositionId = finalPositionId;
 
-    const tireDamage = car.foDamages.find(
-      (tireDmg) => tireDmg.type == DamageTypeE.tire
-    );
-    tireDamage.wearPoints -= damages.tire;
+    car.wpTire -= damages.tire;
 
-    const brakeDamage = car.foDamages.find(
-      (brakeDmg) => brakeDmg.type == DamageTypeE.brakes
-    );
-    brakeDamage.wearPoints -= damages.brake;
+    car.wpBrakes -= damages.brake;
 
-    const shocksDamage = car.foDamages.find(
-      (shocksDmg) => shocksDmg.type == DamageTypeE.shocks
-    );
     for (
-      let shocksDamagePotential = damages.shocks;
-      shocksDamagePotential > 0;
-      shocksDamagePotential--
+      let shocksDamageRollsLeft = damages.shocks;
+      shocksDamageRollsLeft > 0;
+      shocksDamageRollsLeft--
     ) {
       if (isShocksDamage()) {
-        shocksDamage.wearPoints--;
+        car.wpShocks--;
       }
     }
 
-    const chassisDamage = car.foDamages.find(
-      (chassisDmg) => chassisDmg.type == DamageTypeE.chassis
-    );
-    const otherChassisDamages: foDamages[] = [];
-    const otherRetiredCarsToSave: foCars[] = [];
+    // @todo When collision, make a debris on the track
+    const otherChassisDamages: foCars[] = [];
     for (const otherCarId of damages.chassis) {
       if (isCollision()) {
-        chassisDamage.wearPoints--;
+        car.wpChassis--;
       }
       if (isCollision()) {
-        const otherCarDamage = await foDamages.findOne({
-          where: { foCarId: otherCarId, type: DamageTypeE.chassis },
-        });
-        otherCarDamage.wearPoints--;
-        otherChassisDamages.push(otherCarDamage);
-        if (otherCarDamage.wearPoints <= 0) {
-          const otherRetiredCar = await foCars.findByPk(otherCarId);
-          otherRetiredCar.state = CarStateE.retired;
-          otherRetiredCarsToSave.push(otherRetiredCar);
+        const otherCar = await foCars.findByPk(otherCarId);
+        otherCar.wpChassis--;
+        otherChassisDamages.push(otherCar);
+        if (otherCar.wpChassis <= 0) {
+          otherCar.state = CarStateE.retired;
         }
       }
     }
 
-    if (shocksDamage.wearPoints <= 0 || chassisDamage.wearPoints <= 0) {
+    if (car.wpShocks <= 0 || car.wpChassis <= 0) {
       car.state = CarStateE.retired;
     }
 
@@ -660,12 +625,7 @@ const makeMove = async ({
 
     await Promise.all([
       car.save(),
-      tireDamage.save(),
-      brakeDamage.save(),
-      shocksDamage.save(),
-      chassisDamage.save(),
       ...otherChassisDamages.map((dmg) => dmg.save()),
-      ...otherRetiredCarsToSave.map((car) => car.save()),
       turn.save(),
     ]);
 

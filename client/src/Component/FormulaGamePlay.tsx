@@ -77,9 +77,16 @@ const FormulaGamePlay = ({
               {game.gamesUsers.find((u) => (u.id = car.userId)).user.name}
             </Typography>
             <Stack direction="row">
-              {car.foDamages.map((damage) => (
+              {[
+                car.wpTire,
+                car.wpGearbox,
+                car.wpBrakes,
+                car.wpEngine,
+                car.wpChassis,
+                car.wpShocks,
+              ].map((wp, index) => (
                 <TextField
-                  key={damage.type}
+                  key={index}
                   // @todo This much styling here in code looks like an antipattern and might clash with other styling, think of some single source of truth
                   inputProps={{
                     style: {
@@ -88,7 +95,7 @@ const FormulaGamePlay = ({
                       textAlign: "center",
                     },
                   }}
-                  value={damage.wearPoints}
+                  value={wp}
                 />
               ))}
             </Stack>

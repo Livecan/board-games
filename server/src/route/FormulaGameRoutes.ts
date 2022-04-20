@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import expressWebSocket from "express-ws";
 import { games } from "../../../common/src/models/generated/games";
-import { foCars } from "../../../common/src/models/generated/foCars";
+import { foCars, foCarsAttributes } from "../../../common/src/models/generated/foCars";
 import {
   users,
   usersAttributes,
@@ -16,7 +16,6 @@ import {
   PreconditionRequiredError,
   UnauthorizedError,
 } from "../utils/errors";
-import { foDamagesAttributes } from "../../../common/src/models/generated/foDamages";
 import { gamesStateIdEnum as gamesStateIdE } from "../../../common/src/models/enums/game";
 import { foTurns } from "../../../common/src/models/generated/foTurns";
 import { Op } from "sequelize";
@@ -34,8 +33,10 @@ const postAddGameRoute = router.route("/add").post([
   (req: Request & { user: users }, res: Response) => {
     formulaSvc
       .add({ user: req.user, name: req.body.name })
-      .then((gameId) =>
-        formulaSvc.getGame({ gameId: gameId }).then((game) => res.send(game))
+      .then((gameId) => {
+        console.log(`GameId: ${gameId}`);
+        formulaSvc.getGame({ gameId: gameId }).then((game) => res.send(game)
+      )}
       )
       .catch((e) => {
         throw e;
@@ -131,13 +132,13 @@ const postCarSetupRoute = router.post("/:gameId/setup/car/:foCarId", [
   ) => {
     const gameId = parseInt(req.params.gameId);
     const foCarId = parseInt(req.params.foCarId);
-    const payload: [foDamagesAttributes] = req.body;
+    const payload: foCarsAttributes = req.body;
     authorize(req, res, canEditCarSetup).then(async () => {
       await formulaSvc.editCarSetup({
         userId: req.user.id,
         gameId: gameId,
         foCarId: foCarId,
-        foCarDamages: payload,
+        foCar: payload,
       });
 
       const gameSetup = await formulaSvc.getGame({ gameId: gameId });

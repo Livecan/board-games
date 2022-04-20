@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import { DataGrid, GridColumns } from "@mui/x-data-grid";
 import React, { useEffect, useMemo, useState } from "react";
-import { DamageTypeEnum as DamageTypeE } from "../../../common/src/models/enums/formula";
 import { foPositionsAttributes } from "../../../common/src/models/generated/foPositions";
 import {
   fullFormulaGame,
@@ -141,12 +140,9 @@ const MoveOptionDamageTable = ({
       rows={mos.map((mo) => ({
         id: mo.traverse.join("."),
         selection: { isSelected: mo === selected, onClick: () => onSelect(mo) },
-        tires: mo.foDamages.find((dmg) => dmg.type == DamageTypeE.tire)
-          .wearPoints,
-        brakes: mo.foDamages.find((dmg) => dmg.type == DamageTypeE.brakes)
-          .wearPoints,
-        shocks: mo.foDamages.find((dmg) => dmg.type == DamageTypeE.shocks)
-          .wearPoints,
+        tires: mo.damages.tire,
+        brakes: mo.damages.brakes,
+        shocks: mo.damages.shocks,
       }))}
     />
     {/* @todo Consider what to do about this styling here. It's a very specific component, so maybe ok */}
@@ -181,7 +177,11 @@ const MoveOption = ({
   onConfirm: (selected: moveOption) => void;
 }) => {
   const hasDamaged = useMemo(
-    () => mos[0].foDamages.some((dmg) => dmg.wearPoints > 0),
+    () =>
+      mos[0].damages.tire > 0 ||
+      mos[0].damages.brakes > 0 ||
+      mos[0].damages.chassis > 0 ||
+      mos[0].damages.shocks > 0,
     [mos]
   );
   const isSelected = selected?.foPositionId == position.id;

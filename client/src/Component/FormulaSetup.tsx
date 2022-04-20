@@ -23,11 +23,21 @@ import { gamesUsersAttributes } from "../../../common/src/models/generated/games
 import { foGamesAttributes } from "../../../common/src/models/generated/foGames";
 import useDebouncedState from "../Hook/UseDebouncedState";
 import {
-  car,
   formulaGame,
   fullFormulaGame,
 } from "../../../common/src/models/interfaces/formula";
 import { gamesUsersReadyStateEnum as readyStateE } from "../../../common/src/models/enums/game";
+import { foCarsAttributes } from "../../../common/src/models/generated/foCars";
+
+// @todo Figure out what to do with this one - probably something like keyof enum blah blah...
+enum DamageTypeEnum {
+  tire = 1,
+  gearbox = 2,
+  brakes = 3,
+  engine = 4,
+  chassis = 5,
+  shocks = 6,
+}
 
 const FlexBox = ({ sx = {}, children = {}, ...rest }: BoxProps) => (
   <Box
@@ -111,11 +121,11 @@ const UserCars = (props: {
   userId: number;
   name: string;
   readyState: boolean;
-  cars: car[];
+  cars: foCarsAttributes[];
   game: gamesAttributes & foGamesAttributes;
 }) => {
   const [userData] = useContext(LoginContext);
-  const [debouncedCars, setCars, cars] = useDebouncedState<car[]>(
+  const [debouncedCars, setCars, cars] = useDebouncedState<foCarsAttributes[]>(
     props.cars,
     1000
   );
@@ -130,10 +140,13 @@ const UserCars = (props: {
         .slice(0, props.game.carsPerPlayer)
         .every(
           (car) =>
-            car.foDamages.reduce(
-              (carry, current) => carry + current.wearPoints,
-              0
-            ) == props.game.wearPoints
+            car.wpTire +
+              car.wpGearbox +
+              car.wpBrakes +
+              car.wpEngine +
+              car.wpChassis +
+              car.wpShocks ==
+            props.game.wearPoints
         ),
     [props.cars, props.game.carsPerPlayer]
   );
@@ -146,14 +159,30 @@ const UserCars = (props: {
     setCars((cars) => {
       // @todo Use this for the deep copy insted: structuredClone(cars);
       // Only released recently - Feb/Mar 2022, so no wide support yet.
-      let updatedCars = cars.map((car) => ({
-        ...car,
-        foDamages: car.foDamages.map((damage) => ({ ...damage })),
-      }));
-      updatedCars
-        .find((car) => car.id == carId)
-        .foDamages.find((damage) => damage.type == damageType).wearPoints =
-        wearPoints;
+      let updatedCars = cars.map((car) => ({ ...car }));
+      const updateCar = updatedCars.find((car) => car.id == carId);
+
+      // @todo Is there some more elegant way than the following?
+      switch (damageType) {
+        case DamageTypeEnum.tire:
+          updateCar.wpTire = wearPoints;
+          break;
+        case DamageTypeEnum.gearbox:
+          updateCar.wpGearbox = wearPoints;
+          break;
+        case DamageTypeEnum.brakes:
+          updateCar.wpBrakes = wearPoints;
+          break;
+        case DamageTypeEnum.engine:
+          updateCar.wpEngine = wearPoints;
+          break;
+        case DamageTypeEnum.chassis:
+          updateCar.wpChassis = wearPoints;
+          break;
+        case DamageTypeEnum.shocks:
+          updateCar.wpShocks = wearPoints;
+          break;
+      }
 
       return updatedCars;
     });
@@ -164,24 +193,20 @@ const UserCars = (props: {
   // making the server request for changing cars
   // If in future expected changes of cars via changed props, need to make a
   // useEffect(do setCars(props.cars), [props.cars])
+  // @todo Consider putting this piece of code in the useEffect hook which follows? Or even just use the debounced cars straight ahead???
   const diffCars = useMemo(() => {
-    const diff: car[] = [];
+    const diff: foCarsAttributes[] = [];
     for (const debouncedCar of debouncedCars) {
-      for (const debouncedDamage of debouncedCar.foDamages) {
-        const originalWearPoints = props.cars
-          .find((car) => car.id == debouncedCar.id)
-          .foDamages.find(
-            (damage) => damage.type == debouncedDamage.type
-          ).wearPoints;
-        if (debouncedDamage.wearPoints != originalWearPoints) {
-          let diffCar = diff.find((car) => car.id == debouncedCar.id);
-          if (diffCar == null) {
-            diffCar = { ...debouncedCar };
-            diffCar.foDamages = [];
-            diff.push(diffCar);
-          }
-          diffCar.foDamages.push(debouncedDamage);
-        }
+      const originalCar = props.cars.find((car) => car.id == debouncedCar.id);
+      if (
+        originalCar.wpTire != debouncedCar.wpTire ||
+        originalCar.wpGearbox != debouncedCar.wpGearbox ||
+        originalCar.wpBrakes != debouncedCar.wpBrakes ||
+        originalCar.wpEngine != debouncedCar.wpEngine ||
+        originalCar.wpChassis != debouncedCar.wpChassis ||
+        originalCar.wpShocks != debouncedCar.wpShocks
+      ) {
+        diff.push(debouncedCar);
       }
     }
     return diff;
@@ -191,10 +216,7 @@ const UserCars = (props: {
     for (const carUpdate of diffCars) {
       axios.post(
         `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup/car/${carUpdate.id}`,
-        carUpdate.foDamages.map((damage) => ({
-          type: damage.type,
-          wearPoints: damage.wearPoints,
-        }))
+        carUpdate
       );
     }
   }, [diffCars]);
@@ -250,11 +272,18 @@ const UserCars = (props: {
                 flexWrap: "wrap",
               }}
             >
-              {car.foDamages.map((damage) => (
+              {[
+                { wp: car.wpTire, type: DamageTypeEnum.tire },
+                { wp: car.wpGearbox, type: DamageTypeEnum.gearbox },
+                { wp: car.wpBrakes, type: DamageTypeEnum.brakes },
+                { wp: car.wpEngine, type: DamageTypeEnum.engine },
+                { wp: car.wpChassis, type: DamageTypeEnum.chassis },
+                { wp: car.wpShocks, type: DamageTypeEnum.shocks },
+              ].map((damage) => (
                 // @todo Validate on backend
                 <ValidatedNumberTextField
                   key={damage.type}
-                  value={damage.wearPoints}
+                  value={damage.wp}
                   validate={PositiveNumberValidator}
                   onChange={(value) =>
                     props.userId == userData?.user?.id &&

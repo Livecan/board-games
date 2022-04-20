@@ -1,7 +1,6 @@
 import * as Sequelize from 'sequelize';
 import { DataTypes, Model, Optional } from 'sequelize';
 import type { foCurves, foCurvesId } from './foCurves';
-import type { foDamages, foDamagesId } from './foDamages';
 import type { foGames, foGamesId } from './foGames';
 import type { foLogs, foLogsId } from './foLogs';
 import type { foPositions, foPositionsId } from './foPositions';
@@ -16,6 +15,12 @@ export interface foCarsAttributes {
   lap: number;
   foPositionId?: number;
   gear: number;
+  wpTire: number;
+  wpGearbox: number;
+  wpBrakes: number;
+  wpEngine: number;
+  wpChassis: number;
+  wpShocks: number;
   order?: number;
   ranking?: number;
   foCurveId?: number;
@@ -41,6 +46,12 @@ export class foCars extends Model<foCarsAttributes, foCarsCreationAttributes> im
   lap!: number;
   foPositionId?: number;
   gear!: number;
+  wpTire!: number;
+  wpGearbox!: number;
+  wpBrakes!: number;
+  wpEngine!: number;
+  wpChassis!: number;
+  wpShocks!: number;
   order?: number;
   ranking?: number;
   foCurveId?: number;
@@ -52,18 +63,6 @@ export class foCars extends Model<foCarsAttributes, foCarsCreationAttributes> im
   created!: Date;
   modified!: Date;
 
-  // foCars hasMany foDamages via foCarId
-  foDamages!: foDamages[];
-  getFoDamages!: Sequelize.HasManyGetAssociationsMixin<foDamages>;
-  setFoDamages!: Sequelize.HasManySetAssociationsMixin<foDamages, foDamagesId>;
-  addFoDamage!: Sequelize.HasManyAddAssociationMixin<foDamages, foDamagesId>;
-  addFoDamages!: Sequelize.HasManyAddAssociationsMixin<foDamages, foDamagesId>;
-  createFoDamage!: Sequelize.HasManyCreateAssociationMixin<foDamages>;
-  removeFoDamage!: Sequelize.HasManyRemoveAssociationMixin<foDamages, foDamagesId>;
-  removeFoDamages!: Sequelize.HasManyRemoveAssociationsMixin<foDamages, foDamagesId>;
-  hasFoDamage!: Sequelize.HasManyHasAssociationMixin<foDamages, foDamagesId>;
-  hasFoDamages!: Sequelize.HasManyHasAssociationsMixin<foDamages, foDamagesId>;
-  countFoDamages!: Sequelize.HasManyCountAssociationsMixin;
   // foCars hasMany foLogs via foCarId
   foLogs!: foLogs[];
   getFoLogs!: Sequelize.HasManyGetAssociationsMixin<foLogs>;
@@ -160,6 +159,36 @@ export class foCars extends Model<foCarsAttributes, foCarsCreationAttributes> im
       allowNull: false,
       defaultValue: -1,
       comment: "1-6 - actual gear\\n-1 - start\\n0 - is used if for any reason next turn needs to be in 1st gear"
+    },
+    wpTire: {
+      type: DataTypes.TINYINT,
+      allowNull: false,
+      field: 'wp_tire'
+    },
+    wpGearbox: {
+      type: DataTypes.TINYINT,
+      allowNull: false,
+      field: 'wp_gearbox'
+    },
+    wpBrakes: {
+      type: DataTypes.TINYINT,
+      allowNull: false,
+      field: 'wp_brakes'
+    },
+    wpEngine: {
+      type: DataTypes.TINYINT,
+      allowNull: false,
+      field: 'wp_engine'
+    },
+    wpChassis: {
+      type: DataTypes.TINYINT,
+      allowNull: false,
+      field: 'wp_chassis'
+    },
+    wpShocks: {
+      type: DataTypes.TINYINT,
+      allowNull: false,
+      field: 'wp_shocks'
     },
     order: {
       type: DataTypes.INTEGER,

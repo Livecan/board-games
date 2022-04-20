@@ -13,8 +13,6 @@ import { foCars as _foCars } from "./foCars";
 import type { foCarsAttributes, foCarsCreationAttributes } from "./foCars";
 import { foCurves as _foCurves } from "./foCurves";
 import type { foCurvesAttributes, foCurvesCreationAttributes } from "./foCurves";
-import { foDamages as _foDamages } from "./foDamages";
-import type { foDamagesAttributes, foDamagesCreationAttributes } from "./foDamages";
 import { foDebris as _foDebris } from "./foDebris";
 import type { foDebrisAttributes, foDebrisCreationAttributes } from "./foDebris";
 import { foEDamageTypes as _foEDamageTypes } from "./foEDamageTypes";
@@ -50,7 +48,6 @@ export {
   _drTurns as drTurns,
   _foCars as foCars,
   _foCurves as foCurves,
-  _foDamages as foDamages,
   _foDebris as foDebris,
   _foEDamageTypes as foEDamageTypes,
   _foGames as foGames,
@@ -81,8 +78,6 @@ export type {
   foCarsCreationAttributes,
   foCurvesAttributes,
   foCurvesCreationAttributes,
-  foDamagesAttributes,
-  foDamagesCreationAttributes,
   foDebrisAttributes,
   foDebrisCreationAttributes,
   foEDamageTypesAttributes,
@@ -119,7 +114,6 @@ export function initModels(sequelize: Sequelize) {
   const drTurns = _drTurns.initModel(sequelize);
   const foCars = _foCars.initModel(sequelize);
   const foCurves = _foCurves.initModel(sequelize);
-  const foDamages = _foDamages.initModel(sequelize);
   const foDebris = _foDebris.initModel(sequelize);
   const foEDamageTypes = _foEDamageTypes.initModel(sequelize);
   const foGames = _foGames.initModel(sequelize);
@@ -138,8 +132,6 @@ export function initModels(sequelize: Sequelize) {
   drTokenStates.hasMany(drTokensGames, { as: "drTokensGames", foreignKey: "drTokenStateId"});
   drTokensGames.belongsTo(drTokens, { as: "drToken", foreignKey: "drTokenId"});
   drTokens.hasMany(drTokensGames, { as: "drTokensGames", foreignKey: "drTokenId"});
-  foDamages.belongsTo(foCars, { as: "foCar", foreignKey: "foCarId"});
-  foCars.hasMany(foDamages, { as: "foDamages", foreignKey: "foCarId"});
   foLogs.belongsTo(foCars, { as: "foCar", foreignKey: "foCarId"});
   foCars.hasMany(foLogs, { as: "foLogs", foreignKey: "foCarId"});
   foTurns.belongsTo(foCars, { as: "foCar", foreignKey: "foCarId"});
@@ -156,8 +148,6 @@ export function initModels(sequelize: Sequelize) {
   foGames.hasMany(foDebris, { as: "foDebris", foreignKey: "gameId"});
   foTurns.belongsTo(foGames, { as: "game", foreignKey: "gameId"});
   foGames.hasMany(foTurns, { as: "foTurns", foreignKey: "gameId"});
-  foDamages.belongsTo(foLogs, { as: "foLog", foreignKey: "foLogId"});
-  foLogs.hasMany(foDamages, { as: "foDamages", foreignKey: "foLogId"});
   foCars.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
   foPositions.hasMany(foCars, { as: "foCars", foreignKey: "foPositionId"});
   foDebris.belongsTo(foPositions, { as: "foPosition", foreignKey: "foPositionId"});
@@ -213,7 +203,6 @@ export function initModels(sequelize: Sequelize) {
     drTurns: drTurns,
     foCars: foCars,
     foCurves: foCurves,
-    foDamages: foDamages,
     foDebris: foDebris,
     foEDamageTypes: foEDamageTypes,
     foGames: foGames,

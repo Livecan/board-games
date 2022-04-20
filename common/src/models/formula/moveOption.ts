@@ -1,8 +1,6 @@
 import finiteStateMachine from "../../../utils/finiteStateMachine";
-import { DamageTypeEnum as DamageTypeE } from "../enums/formula";
-import { foDamagesCreationAttributes } from "../generated/foDamages";
+import { foCarsAttributes } from "../generated/foCars";
 import {
-  car,
   fullFormulaGame,
   fullPosition,
   fullTrack,
@@ -23,7 +21,12 @@ class Mo {
   isAllowedLeft: boolean = true;
   isAllowedRight: boolean = true;
   isOvershootingCurve: boolean = false;
-  foDamages: foDamagesCreationAttributes[];
+  damages: {
+    tire: number,
+    brakes: number,
+    chassis: number,
+    shocks: number,
+  };
   traverse: number[] = []; // array of foPositionId
   overtakeLeft: number = 0;
   overtakeHistory: DirectionEnum = null;
@@ -54,20 +57,16 @@ class Mo {
       this.foCurveId = foCurveId;
       this.curveStops = curveStop;
       this.movesLeft = movesLeft;
-      this.foDamages = [
-        DamageTypeE.tire,
-        DamageTypeE.gearbox,
-        DamageTypeE.brakes,
-        DamageTypeE.engine,
-        DamageTypeE.chassis,
-        DamageTypeE.shocks,
-      ].map((damageType) => ({ type: damageType, wearPoints: 0 }));
+      this.damages = {
+        tire: 0,
+        brakes: 0,
+        chassis: 0,
+        shocks: 0,
+      };
       this.traverse.push(previousMoOrFoPositionId);
     } else {
       Object.assign(this, previousMoOrFoPositionId);
-      this.foDamages = previousMoOrFoPositionId.foDamages.map((damage) => ({
-        ...damage,
-      }));
+      this.damages = {...previousMoOrFoPositionId.damages};
       this.traverse = [...previousMoOrFoPositionId.traverse];
       this.slipstream = { ...previousMoOrFoPositionId.slipstream };
     }
@@ -78,7 +77,7 @@ class Mo {
       foPositionId: this.foPositionId,
       foCurveId: this.foCurveId,
       isNextLap: this.isNextLap,
-      foDamages: this.foDamages,
+      damages: this.damages,
       traverse: this.traverse,
     };
   }
@@ -322,23 +321,13 @@ const validateMo = (
 
   // After dealing the tire damage, the car cannot go under 0 wear points;
   // 0 means the car flips and needs to continue in the first gear
-  if (
-    currentCar.foDamages.find((dmg) => dmg.type == DamageTypeE.tire)
-      .wearPoints -
-      damages.tire <
-    0
-  ) {
+  if (currentCar.wpTire - damages.tire < 0) {
     console.log("Too much tire damage");
     return false;
   }
 
   // After dealing the brake damage, the car cannot go under 1 wear point.
-  if (
-    currentCar.foDamages.find((dmg) => dmg.type == DamageTypeE.brakes)
-      .wearPoints -
-      damages.brake <
-    1
-  ) {
+  if (currentCar.wpBrakes - damages.brake < 1) {
     console.log("Too much brake damage");
     return false;
   }
@@ -420,13 +409,9 @@ const getInitialBrakingOptions = (initialMo: Mo) => {
   ) {
     const brakingMo = initialMo.getClone();
     brakingMo.movesLeft -= brakingMoves;
-    brakingMo.foDamages.find(
-      (damage) => damage.type == DamageTypeE.brakes
-    ).wearPoints = Math.min(brakingMoves, 3);
+    brakingMo.damages.brakes = Math.min(brakingMoves, 3);
     if (brakingMoves > 3) {
-      brakingMo.foDamages.find(
-        (damage) => damage.type == DamageTypeE.tire
-      ).wearPoints = Math.min(brakingMoves - 3, 3);
+      brakingMo.damages.tire = Math.min(brakingMoves - 3, 3);
     }
     mos.push(brakingMo);
   }
@@ -491,14 +476,7 @@ const getNextMos = (game: fullFormulaGame, track: fullTrack, current: Mo) => {
       (debris) => debris.foPositionId == currentPosition.id
     ).length;
     if (shocksDamageCount > 0) {
-      let shocks = nextMo.foDamages.find(
-        (damage) => damage.type == DamageTypeE.shocks
-      );
-      if (shocks == null) {
-        shocks = { type: DamageTypeE.shocks, wearPoints: 0 };
-        nextMo.foDamages.push(shocks);
-      }
-      shocks.wearPoints += shocksDamageCount;
+      nextMo.damages.shocks += shocksDamageCount;
     }
 
     if (addCurveHandling(track, nextMo) && isDamageOk(currentCar, nextMo)) {
@@ -530,27 +508,19 @@ const addUniqueMo = (mos: Mo[], newMo: Mo) => {
       // Now the only difference should be in damages.
       // If the checkMoveOption deals the same or less damage, we don't need to
       // add newMoveOption.
-      if (
-        checkedMo.foDamages.every(
-          (checkDamage) =>
-            checkDamage.wearPoints <=
-            newMo.foDamages.find(
-              (newDamage) => newDamage.type == checkDamage.type
-            ).wearPoints
-        )
+      if (checkedMo.damages.tire <= newMo.damages.tire &&
+        checkedMo.damages.brakes <= newMo.damages.brakes &&
+        checkedMo.damages.chassis <= newMo.damages.chassis &&
+        checkedMo.damages.shocks <= newMo.damages.shocks
       ) {
         return;
       }
       // If the newMoveOption deals less or equal to the checkMoveOption, we
       // remove checkMoveOption from moveOptions.
-      if (
-        checkedMo.foDamages.every(
-          (checkDamage) =>
-            checkDamage.wearPoints >=
-            newMo.foDamages.find(
-              (newDamage) => newDamage.type == checkDamage.type
-            ).wearPoints
-        )
+      if (checkedMo.damages.tire >= newMo.damages.tire &&
+        checkedMo.damages.brakes >= newMo.damages.brakes &&
+        checkedMo.damages.chassis >= newMo.damages.chassis &&
+        checkedMo.damages.shocks >= newMo.damages.shocks
       ) {
         mos.splice(index, 1);
       }
@@ -559,25 +529,8 @@ const addUniqueMo = (mos: Mo[], newMo: Mo) => {
   mos.push(newMo);
 };
 
-const isDamageOk = (car: car, mo: Mo) => {
-  for (const damage of mo.foDamages) {
-    const carWearPoints = car.foDamages.find(
-      (_damage) => _damage.type == damage.type
-    ).wearPoints;
-    if (
-      damage.type == DamageTypeE.tire &&
-      carWearPoints - damage.wearPoints < 0
-    ) {
-      return false;
-    }
-    if (
-      damage.type == DamageTypeE.brakes &&
-      carWearPoints - damage.wearPoints < 1
-    ) {
-      return false;
-    }
-  }
-  return true;
+const isDamageOk = (car: foCarsAttributes, mo: Mo) => {
+  return car.wpTire >= mo.damages.tire || car.wpBrakes > mo.damages.brakes;
 };
 
 /**
@@ -610,8 +563,7 @@ const addCurveHandling = (track: fullTrack, mo: Mo): boolean => {
     }
     // Leaving skipping one stop - getting tire damage
     if (mo.curveStops + 1 == curve.stops) {
-      mo.foDamages.find((damage) => damage.type == DamageTypeE.tire)
-        .wearPoints++;
+      mo.damages.tire++;
       return true;
     }
     // Otherwise overshooting by more than one stop - invalid MoveOption
@@ -630,7 +582,7 @@ const addCurveHandling = (track: fullTrack, mo: Mo): boolean => {
       mo.foCurveId = nextPosition.foCurveId;
       mo.curveStops = -1;
     }
-    mo.foDamages.find((damage) => damage.type == DamageTypeE.tire).wearPoints++;
+    mo.damages.tire++;
     return true;
   }
 
