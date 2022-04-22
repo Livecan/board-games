@@ -1,6 +1,6 @@
 import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../Utils/customAxios";
 import { Button, Stack } from "@mui/material";
 import GamesList from "../Component/GamesList";
 import commonConfig from "../../../common/src/config/config";
@@ -24,11 +24,8 @@ const GamesOverviewPage = () => {
   };
 
   const createNewFormulaGame = () => {
-    axios
-      .post(
-        `${commonConfig.apiBaseUrl}formula/add`,
-        {}
-      )
+    axios(userData?.jwt)
+      .post(`${commonConfig.apiBaseUrl}formula/add`)
       .then((response) =>
         navigateToGame(response.data.id, response.data.gameTypeId)
       );

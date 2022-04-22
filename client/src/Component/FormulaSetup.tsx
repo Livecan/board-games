@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo } from "react";
-import axios from "axios";
+import axios from "../Utils/customAxios";
 import {
   Box,
   BoxProps,
@@ -214,7 +214,7 @@ const UserCars = (props: {
 
   useEffect(() => {
     for (const carUpdate of diffCars) {
-      axios.post(
+      axios(userData?.jwt).post(
         `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup/car/${carUpdate.id}`,
         carUpdate
       );
@@ -233,7 +233,7 @@ const UserCars = (props: {
       debouncedReadyState != null &&
       debouncedReadyState != props.readyState
     ) {
-      axios.post(
+      axios(userData?.jwt).post(
         `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup/ready`,
         {
           isReady: debouncedReadyState,
@@ -312,12 +312,15 @@ const GameSetup = (props: {
   const isCreator = userData?.user?.id == game.creatorId;
 
   const startGame = () => {
-    axios.post(`/${commonConfig.apiBaseUrl}formula/${props.game.id}/start`, {});
+    axios(userData?.jwt).post(
+      `/${commonConfig.apiBaseUrl}formula/${props.game.id}/start`,
+      {}
+    );
   };
 
   useEffect(() => {
     if (debouncedGame != props.game) {
-      axios.post(
+      axios(userData?.jwt).post(
         `/${commonConfig.apiBaseUrl}formula/${props.game.id}/setup`,
         debouncedGame
       );

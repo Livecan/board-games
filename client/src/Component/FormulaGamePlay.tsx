@@ -1,6 +1,6 @@
-import { Grid, Stack, TextField, Typography } from "@mui/material";
-import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
+import { Grid, Stack, TextField, Typography } from "@mui/material";
+import axios from "../Utils/customAxios";
 import {
   fullFormulaGame,
   fullTrack,
@@ -16,7 +16,7 @@ const FormulaTrackPanel = ({ game }: { game: fullFormulaGame }) => {
   const [availableMOs, setAvailableMOs] = useState(null);
 
   useEffect(() => {
-    axios
+    axios(userData?.jwt)
       .get(`/${commonConfig.apiBaseUrl}formula/${game.id}/track`)
       .then((res) => setTrack(res.data));
   }, [game.foTrackId]);
@@ -24,7 +24,7 @@ const FormulaTrackPanel = ({ game }: { game: fullFormulaGame }) => {
   useEffect(() => {
     const nextCar = game.foCars.find((car) => car.id == game.lastTurn.foCarId);
     if (nextCar.userId == userData.user.id && game.lastTurn.roll != null) {
-      axios
+      axios(userData?.jwt)
         .get(
           `/${commonConfig.apiBaseUrl}formula/${game.id}/car/${nextCar.id}/moveOptions`
         )
@@ -36,7 +36,7 @@ const FormulaTrackPanel = ({ game }: { game: fullFormulaGame }) => {
 
   const selectMo = (moveOption: moveOption) => {
     const nextCar = game.foCars.find((car) => car.id == game.lastTurn.foCarId);
-    axios.post(
+    axios(userData?.jwt).post(
       `/${commonConfig.apiBaseUrl}formula/${game.id}/car/${nextCar.id}/position`,
       // @todo Change MOs - remove the original car position from MOs when they come from server already and then no need to use filter here
       moveOption.traverse.filter(

@@ -1,7 +1,6 @@
-import React from "react";
+import React, { useContext } from "react";
 import { Route, Routes } from "react-router-dom";
 import LoginContext from "./Context/LoginContext";
-import useLogin from "./Hook/UseLoginHook";
 import LoginPage from "./Page/LoginPage";
 import {
   Container,
@@ -11,20 +10,9 @@ import {
 } from "@mui/material";
 import FormulaPage from "./Page/FormulaPage";
 import GamesOverviewPage from "./Page/GamesOverviewPage";
-import axios from "axios";
 
 const App: React.FC = () => {
-  axios.interceptors.request.use((config) => {
-    config.headers = { ...config.headers, accept: "application/json" };
-    return config;
-  });
-  const [userData, login, logout] = useLogin({
-    onLogin: (userData) =>
-      axios.interceptors.request.use((config) => {
-        config.headers = { ...config.headers, Authorization: userData.jwt };
-        return config;
-      }),
-  });
+  const [userData] = useContext(LoginContext);
 
   const theme = createTheme({
     palette: {
@@ -36,20 +24,18 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider theme={theme}>
-      <LoginContext.Provider value={[userData, login, logout]}>
-        <CssBaseline>
-          <Container>
-            {userData == null ? (
-              <LoginPage />
-            ) : (
-              <Routes>
-                <Route index element={<GamesOverviewPage />} />
-                <Route path="/formula/:gameId" element={<FormulaPage />} />
-              </Routes>
-            )}
-          </Container>
-        </CssBaseline>
-      </LoginContext.Provider>
+      <CssBaseline>
+        <Container>
+          {userData == null ? (
+            <LoginPage />
+          ) : (
+            <Routes>
+              <Route index element={<GamesOverviewPage />} />
+              <Route path="/formula/:gameId" element={<FormulaPage />} />
+            </Routes>
+          )}
+        </Container>
+      </CssBaseline>
     </ThemeProvider>
   );
 };

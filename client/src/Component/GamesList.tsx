@@ -1,6 +1,6 @@
 import { Button } from "@mui/material";
 import { DataGrid, GridColDef, GridRenderCellParams } from "@mui/x-data-grid";
-import axios from "axios";
+import axios from "../Utils/customAxios";
 import React, { useContext, useState } from "react";
 import commonConfig from "../../../common/src/config/config";
 import loginContext from "../Context/LoginContext";
@@ -49,11 +49,8 @@ const GamesList = (props: {
             <Button
               variant="contained"
               onClick={() => {
-                axios
-                  .post(
-                    `/${commonConfig.apiBaseUrl}game/${game.id}/join`,
-                    {}
-                  )
+                axios(userData?.jwt)
+                  .post(`/${commonConfig.apiBaseUrl}game/${game.id}/join`)
                   .then((response) =>
                     joinGame(response.data.id, response.data.gameTypeId)
                   );
