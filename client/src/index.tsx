@@ -6,9 +6,7 @@ import { LoginContextProvider } from "./Context/LoginContext";
 
 ReactDOM.hydrate(
   <BrowserRouter>
-    <LoginContextProvider>
-      <App />
-    </LoginContextProvider>
+    <App />
   </BrowserRouter>,
   document.getElementById("app")
 );

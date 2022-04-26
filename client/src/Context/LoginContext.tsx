@@ -20,7 +20,7 @@ const LoginContext =
 
 const LoginContextProvider = (props: { children: React.ReactNode }) => {
   const [userData, setUserData] = useState<UserData>(null);
-  const login = (userData) => setUserData(userData);
+  const login = (userData: UserData) => setUserData(userData);
   const logout = () => setUserData(null);
 
   return (
