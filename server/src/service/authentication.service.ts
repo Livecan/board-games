@@ -24,7 +24,7 @@ const login = async (username: string, password: string) => {
     const tokenPayload: UserToken = { id: user.id, username: username };
     const token = jwt.sign(tokenPayload, secret, {
       algorithm: "HS256",
-      expiresIn: "14 days",
+      expiresIn: "365 days",
     });
     return {jwt: token, user: {name: user.name, id: user.id}};
   } else {

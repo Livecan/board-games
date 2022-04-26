@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import * as ReactDOMServer from "react-dom/server";
-import {StaticRouter} from "react-router-dom/server";
+import { StaticRouter } from "react-router-dom/server";
 import React from "react";
 import expressWebSocket from "express-ws";
 import PubSub from "pubsub-js";
@@ -14,7 +14,7 @@ import { AuthenticationFailedError } from "./utils/errors";
 import { initModels } from "../../common/src/models/generated/init-models";
 import commonConfig from "../../common/src/config/config";
 
-const app = express() as express.Express & {pubSub: PubSubJS.Base};
+const app = express() as express.Express & { pubSub: PubSubJS.Base };
 
 app.use(cors());
 
@@ -30,7 +30,11 @@ expressWebSocket(app);
 initModels(sqlConnection);
 
 app.get(/^\/(?!api|resources).*/, (req, res) => {
-  const app = ReactDOMServer.renderToString(<StaticRouter location={req.url}><App /></StaticRouter>);
+  const app = ReactDOMServer.renderToString(
+    <StaticRouter location={req.url}>
+      <App />
+    </StaticRouter>
+  );
   const html = `
     <html lang="en">
     <head>
@@ -49,10 +53,10 @@ app.post(`/${commonConfig.apiBaseUrl}login`, (req, res) => {
     .then((response) => res.send(response))
     .catch((e) => {
       if (e instanceof AuthenticationFailedError) {
-        res.sendStatus(401).send("Authentication failed");
+        res.status(401).send("Authentication failed");
       } else {
-        res.sendStatus(500).send();
-        throw e;
+        res.status(500).send();
+        console.error(e);
       }
     });
 });
@@ -60,8 +64,8 @@ app.post(`/${commonConfig.apiBaseUrl}login`, (req, res) => {
 app.use(`/${commonConfig.apiBaseUrl}game`, gameRoutes);
 app.use(`/${commonConfig.apiBaseUrl}formula`, formulaRoutes);
 
-app.use('/resources', express.static("./client-build"));
-app.use('/resources', express.static("./resources"));
+app.use("/resources", express.static("./client-build"));
+app.use("/resources", express.static("./resources"));
 
 const port = process.env.PORT || 5000;
 
